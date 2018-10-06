@@ -156,6 +156,14 @@ class Token:
                     continue
             return var
         elif self.data_type == self.TYPE_TUPLE:
+            # is method or builtins
+            if len(self.args) >= 1:
+                sub = self.args[0]
+                if sub.name in Exp.BUILTINS.keys():
+                    self.args = self.args[1:]
+                    sub.args = [self]
+                    var = sub.update_graph_recursive(graph)
+                    return var
             operands = list()
             for arg in self.args:
                 operand = arg.update_graph_recursive(graph)

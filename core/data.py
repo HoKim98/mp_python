@@ -170,7 +170,7 @@ class Operator(Variable):
     def symbol(self):
         return self.op
 
-    def encode(self, stack_called=None):
+    def encode(self, stack_called=None):   # TODO inplace 연산자를 outplace로 변환
         stack_called = self._ensure_stack_not_none(stack_called)
         if self.op in Exp.Tokens_Shell:
             args = [self.sub, self.obj, self.step]
