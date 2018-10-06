@@ -152,7 +152,8 @@ class Operator(Variable):
         self.obj = _range_to_tuple(self.obj)
         self.step = _range_to_tuple(self.step)
         self.args = [_range_to_tuple(arg) for arg in self.args]
-        if self.op == '()':  # TODO
+        # ()
+        if self.op in Exp.SHELL_RR:
             if self.sub.is_variable:
                 if self.sub.toward.is_method:
                     args = [self.obj, self.step, *self.args]
@@ -203,7 +204,7 @@ class Indexed(Operator):
 
     @property
     def symbol(self):
-        return '()'  # TODO
+        return Exp.SHELL_RR[0]
 
     def encode(self, stack_called=None):
         stack_called = self._ensure_stack_not_none(stack_called)

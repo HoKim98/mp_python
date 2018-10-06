@@ -90,7 +90,7 @@ class TokenTree(list):
             shell = self.head + token_end
             if shell not in Exp.Tokens_Shell:
                 raise error.SyntaxError(shell[-1])
-            if shell == '()' and len(self) == 1 and self[0].head in Exp.Tokens_Order:  # TODO
+            if shell in Exp.SHELL_RR and len(self) == 1 and self[0].head in Exp.Tokens_Order:
                 last_object = self[0]
                 del self[0]
                 self.__iadd__(last_object)
@@ -112,7 +112,7 @@ class TokenTree(list):
     def check_sizeof(self):
         if self.head in [Exp.NUMBER, Exp.VARIABLE, ]:
             pass
-        elif self.head in ['t', '()', '[)', '(]', '[]', '{}', ]:  # TODO
+        elif self.head in ['t'] + Exp.Tokens_Shell:
             pass
         elif self.head in Exp.IDX:
             if 1 <= len(self) <= 2:
@@ -127,7 +127,7 @@ class TokenTree(list):
 
     def to_data(self):
         # separate indices from range
-        if self.head == '()':  # TODO
+        if self.head in Exp.SHELL_RR:
             # not (2 <= len(self) <= 3):
             if not len(self) == 2:
                 self.head = Exp.TUPLE
@@ -153,7 +153,7 @@ class TokenTree(list):
                 indices = indices.to_data()
                 # escape shell
                 while True:
-                    if indices.name in ['()']:  # TODO
+                    if indices.name in Exp.SHELL_RR:
                         indices.name = Exp.TUPLE
                         indices.data_type = Token.TYPE_TUPLE
                         if len(indices.args) != 1:
@@ -176,7 +176,7 @@ class TokenTree(list):
             data = [token.to_data() for token in self]
             return Token.from_operator(self.head, *data)
         # is range
-        if self.head in ['()', '[)', '(]', '[]', ]:  # TODO
+        if self.head in Exp.Tokens_Range:
             # if not (2 <= len(self) <= 3):
             if not len(self) == 2:
                 raise error.SyntaxError(self.head[0])
@@ -251,7 +251,7 @@ class Interpreter:
                     token = ''
                 result.append(c)
 
-            elif c in Exp.Signs_Indent:
+            elif c in Exp.INDENT:
                 if len(token) >= 1:
                     result.append(token)
                     token = ''
@@ -279,7 +279,7 @@ class Interpreter:
                 break
 
             # indents
-            if w in Exp.Signs_Indent:
+            if w in Exp.INDENT:
                 continue
 
             # subjects

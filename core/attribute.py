@@ -148,7 +148,7 @@ class AttrOP(Attr):
 
 class AttrView(AttrOP):
     def __init__(self, sub, args):
-        super().__init__('{}', args)  # TODO
+        super().__init__(Exp.SHELL_AA[0], args)
         self.sub = sub
 
     def _calculate(self):
@@ -165,7 +165,7 @@ class AttrView(AttrOP):
 
 class AttrIndexed(AttrOP):
     def __init__(self, sub: Attr, args):
-        super().__init__('()', args)  # TODO
+        super().__init__(Exp.SHELL_RR[0], args)
         self.sub = sub
 
     def _calculate(self):

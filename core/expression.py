@@ -45,12 +45,20 @@ class Expression:
     SBO = ['[']
     SBC = [']']
 
+    SHELL_RR = ['()']
+    SHELL_RS = ['(]']
+    SHELL_SR = ['[)']
+    SHELL_SS = ['[]']
+    SHELL_AA = ['{}']
+
     NEXT = ['next']
     FROM = ['from']
     SAVE = ['save']
     DELETE = ['del']
 
     REQUIRED = ['required']
+
+    INDENT = [' ', '\t', ]
 
     EM = ['!']
 
@@ -82,13 +90,13 @@ class Expression:
     Signs_DoubleSingle = ADD + SUB + MUL + TDIV + MAT + MOD + GT + LT + IS + IDX + EM
     Signs_DoubleDouble = POW + FDIV + GE + LE + EQ + OIS + NEQ + IADD + ISUB + IMUL + ITDIV + IMAT + IMOD
     Signs_DoubleTriple = IPOW + IFDIV
-    Signs_Indent = [' ', '\t', ]  # TODO
     Signs_All = Signs + Signs_DoubleSingle + Signs_DoubleDouble + Signs_DoubleTriple
 
     Tokens_Prefix = NEXT + FROM + SAVE + DELETE
     Tokens_Open = RBO + ABO + SBO
     Tokens_Close = RBC + ABC + SBC
-    Tokens_Shell = ['()', '[)', '(]', '[]', '{}', ]  # TODO
+    Tokens_Range = SHELL_RR + SHELL_RS + SHELL_SR + SHELL_SS
+    Tokens_Shell = SHELL_RR + SHELL_RS + SHELL_SR + SHELL_SS + SHELL_AA
     Tokens_Inplace = IADD + ISUB + IMUL + ITDIV + IMAT + IMOD + IPOW + IFDIV + IS + OIS
 
     Tokens_Order = {
@@ -103,7 +111,7 @@ class Expression:
             tuple(POW): 6,
             (NUMBER,): 7, (VARIABLE,): 7, (TUPLE,): 7,
             tuple(RBO): 8, tuple(ABO): 8, tuple(SBO): 8,
-            ('()',): 8, ('[)',): 8, ('(]',): 8, ('[]',): 8, ('{}',): 8,  # TODO
+            tuple(SHELL_RR): 8, tuple(SHELL_RS): 8, tuple(SHELL_SR): 8, tuple(SHELL_SS): 8, tuple(SHELL_AA): 8,
         }
     Tokens_Order = {op: order for ops, order in Tokens_Order.items() for op in ops}
 

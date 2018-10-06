@@ -105,7 +105,7 @@ class Token:
                 end = operands[1] if len(operands) == 2 else None
                 return graph.slice(begin, end)
             # view
-            elif self.name in ['{}']:  # TODO
+            elif self.name in Exp.SHELL_AA:
                 return graph.view(*operands)
             # =
             elif self.name in Exp.IS:
