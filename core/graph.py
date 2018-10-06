@@ -14,6 +14,8 @@ class Graph:
         self.vars = dict()
         # save/delete files sometime
         self.ios = dict()
+        # do not make pointer
+        self.lock_point = False
 
     # make new variable name
     def new_name(self):
@@ -133,8 +135,17 @@ class Graph:
         if op in Exp.IS:
             return self._inplace(sub, obj)
         if op in Exp.OIS:
+            if self.lock_point:
+                return self._inplace(sub, obj)
             if sub.toward is None:
-                return self.operate(Exp.IS[0], sub, obj, step)
+                name = sub.name
+                if obj.has_attr(name):
+                    raise RequiredError(name)
+                sub.toward = obj
+                sub.is_pointer = True
+                sub.is_pointer_orient = True
+                return sub
+                #return self.operate(Exp.IS[0], sub, obj, step)
             return sub
         if op in Exp.Tokens_Inplace:
             tmp = self.alloc_p(sub.toward)

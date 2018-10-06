@@ -21,6 +21,7 @@ class Plan:
     # execute along IO
     def execute(self):
         try:
+            self.graph.lock_point = True
             for var_name, append in self.graph.ios.items():
                 var = self.graph.vars[var_name]
                 # save
@@ -36,6 +37,7 @@ class Plan:
         except BaseError as e:
             self.graph.clean()
             raise e
+        self.graph.lock_point = False
         self.graph.clean()
 
     # execute recursively along IO
@@ -49,6 +51,17 @@ class Plan:
         # is variable
         if type(toward) is data.Variable:
             var = self.attr[toward.name]
+            # load ahead
+            if toward.is_pointer:
+                toward.is_pointer = False
+                try:
+                    toward = self._find_variable(toward)
+                    var.toward = self._execute_recursive(toward.toward)
+                    var.code = toward.encode()
+                    return var
+                # file not exist
+                except RequiredError:
+                    pass
             if toward.toward is not None:
                 if toward.encode() != var.code:
                     var.toward = self._execute_recursive(toward.toward)
@@ -115,6 +128,7 @@ class Plan:
                 self.push(value)
             self._execute_recursive(toward)
             return toward
+        # if binary
         elif type(value) is data.Constant:
             toward.toward = value
             self._execute_recursive(toward)

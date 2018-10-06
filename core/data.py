@@ -21,6 +21,8 @@ class Variable:
         self.step = None
         self.args = None
 
+        self.is_pointer = False
+        self.is_pointer_orient = False
         self.is_constant = False
         self.is_operator = False
         self.is_indices = False
@@ -72,7 +74,8 @@ class Variable:
         if self.name in stack_called:
             return '%s' % self.name
         stack_called.append(self.name)
-        return '(%s=%s)' % (self.name, toward)
+        op = Exp.OIS[0] if self.is_pointer_orient else Exp.IS[0]
+        return '(%s%s%s)' % (self.name, op, toward)
 
     @staticmethod
     def _encode(self, stack_called):
@@ -96,7 +99,8 @@ class Variable:
             return Exp.REQUIRED
         if self.name is None:
             return ''
-        return 'v[ %s = %s ]' % (self.name, self.toward)
+        op = ':=' if self.is_pointer_orient else '='
+        return 'v[ %s %s %s ]' % (self.name, op, self.toward)
 
 
 class Constant(Variable):
