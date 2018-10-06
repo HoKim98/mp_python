@@ -1,9 +1,10 @@
+import cmd
 import os
 
 from core.error import BaseError
 
 
-class Colors:
+class _Colors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -14,29 +15,60 @@ class Colors:
     UNDERLINE = '\033[4m'
 
 
-def interactive(self, verbose=False, debug=False):
-    def print_verbose(*args, **kwargs):
-        if verbose:
-            print(*args, **kwargs)
+class _Interactive(cmd.Cmd):
 
-    dir_root = os.path.abspath(self.dir_process)
-    print_verbose('----------------------------------------------')
-    print_verbose('   Machine Pseudo-Code                        ')
-    print_verbose('                           v.%s' % self.VERSION)
-    print_verbose('----------------------------------------------')
-    while True:
+    def __init__(self, interpreter, debug: bool):
+        super().__init__()
+        self.debug = debug
+        self.dir_process = os.path.abspath(interpreter.dir_process)
+        self.interpreter = interpreter
+        self._set_intro()
+        self._set_prompt()
+
+    def _set_intro(self):
+        intro  = '----------------------------------------------\n'
+        intro += '   Machine Pseudo-Code                        \n'
+        intro += '                           v.%s\n' % self.interpreter.VERSION
+        intro += '----------------------------------------------'
+        self.intro = intro
+
+    def _set_prompt(self):
+        self.prompt = _Colors.OKGREEN + '[%s]' % self.dir_process + _Colors.ENDC + ':@ '
+
+    def default(self, line):
         try:
-            message = input(Colors.OKGREEN + '[%s]' % dir_root + Colors.ENDC + ':@ ')
-            if message == ':q':
-                break
-            self(message)
+            self.interpreter(line)
         except BaseError as e:
-            if debug:
+            if self.debug:
                 raise e
-            print(Colors.FAIL + e.message)
-        except KeyboardInterrupt:
+            print(_Colors.FAIL + e.message)
+        return False
+
+    def precmd(self, line):
+        if line == ':q':
+            line = 'exit'
+        if line == 'EOF':
+            line = ''
             print()
-            break
-        except EOFError:
-            print()
-    print_verbose('Closing...')
+        return line
+
+    def postcmd(self, stop, line):
+        self._set_prompt()
+        return stop
+
+    def do_exit(self, *arg):
+        """Escape from here."""
+        return self.close()
+
+    def close(self):
+        return True
+
+
+def interactive(self, verbose=False, debug=False):
+    v_cmd = _Interactive(self, debug)
+    if not verbose:
+        v_cmd.intro = ''
+    try:
+        v_cmd.cmdloop()
+    except KeyboardInterrupt:
+        print('exit')

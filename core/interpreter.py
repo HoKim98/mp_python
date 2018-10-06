@@ -188,7 +188,7 @@ class TokenTree(list):
 
 
 class Interpreter:
-    VERSION = '0.1'
+    VERSION = '0.1.1'
 
     def __init__(self, dir_process: str = './', plan=None):
         self.dir_process = os.path.join(dir_process)
