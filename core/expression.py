@@ -81,8 +81,6 @@ class Expression:
     ARRAY = 'array'
     BUILTINS = {ARRAY: NotImplemented, }
 
-    MAGIC_PYTHON = ['py', 'python']
-
     EXTENSION_SOURCE = 'mp'
     EXTENSION_BINARY = 'mpb'
 
@@ -114,5 +112,3 @@ class Expression:
             tuple(SHELL_RR): 8, tuple(SHELL_RS): 8, tuple(SHELL_SR): 8, tuple(SHELL_SS): 8, tuple(SHELL_AA): 8,
         }
     Tokens_Order = {op: order for ops, order in Tokens_Order.items() for op in ops}
-
-    MAGIC_CODES = MAGIC_PYTHON + []

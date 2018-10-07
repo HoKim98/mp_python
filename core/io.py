@@ -1,6 +1,5 @@
 import os
 
-from core.error import MagicError
 from core.expression import Expression as Exp
 from core.data import Constant
 
@@ -14,11 +13,6 @@ class IO:
         self.permission = permission
 
     def get(self, item: str):
-        paths = item.split('.')
-        # magic code
-        if len(paths) >= 1:
-            if paths[0] in Exp.MAGIC_PYTHON:
-                raise NotImplementedError  # TODO
         path = self.get_path(item)
         # is graph file
         path_graph = self._get_graph_path(path)
@@ -33,10 +27,6 @@ class IO:
 
     def set(self, item: str, toward):
         paths = item.split('.')
-        # no magic codes
-        if len(paths) >= 1:
-            if paths[0] in Exp.MAGIC_CODES:
-                raise MagicError(paths[0])
         # if toward is None -> remove file
         if toward is None:
             path_graph = '%s.%s' % (self.get_path(item), Exp.EXTENSION_SOURCE)

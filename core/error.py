@@ -13,12 +13,7 @@ class ConstError(BaseError):
 
 class SyntaxError(BaseError):
     def __init__(self, wrong_token: str):
-        super().__init__(0x10, 'Wrong token : \'%s\'.' % wrong_token)
-
-
-class MagicError(BaseError):
-    def __init__(self, wrong_code: str):
-        super().__init__(0x20, 'Wrong magic code : \'%s\'.' % wrong_code)
+        super().__init__(0x11, 'Wrong token : \'%s\'.' % wrong_token)
 
 
 class IOError(BaseError):
@@ -42,3 +37,13 @@ class TooMuchOrLessArguments(BaseError):
             greater_or_less = ''
         super().__init__(0x40, 'Too %s arguments : \'%s\'. Expected %d%s, but given %d.' %
                          (much_or_less, wrong_path, expected, greater_or_less, given))
+
+
+class TypeError(BaseError):
+    def __init__(self, message: str):
+        super().__init__(0x41, 'Wrong type : %s' % message)
+
+
+class NotDataError(BaseError):
+    def __init__(self, wrong_token: str):
+        super().__init__(0x42, '\'%s\' is not Data.' % wrong_token)

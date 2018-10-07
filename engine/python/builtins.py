@@ -3,6 +3,7 @@ from core import error
 from engine.python import attribute as attr
 from engine.python.attribute import np as _np
 
+_print = print
 _max = max
 _min = min
 
@@ -14,6 +15,15 @@ def array(toward, args):
     args = _float_to_int(args.get_values())
     value = _np.zeros(shape=args)
     return _const(toward, value)
+
+
+def print(toward, args):
+    values = args.get_values()
+    for arg, value in zip(args.list, values):
+        output = '%s = %s' % (arg.name, value)
+        _print(output)
+    toward.is_data = False
+    return None
 
 
 def max(toward, args):

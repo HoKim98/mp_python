@@ -62,10 +62,16 @@ class Plan:
                 # file not exist
                 except RequiredError:
                     pass
+            # if changed
             if toward.toward is not None:
-                if toward.encode() != var.code:
+                # if changed or not data
+                if toward.encode() != var.code or not var.is_data:
                     var.toward = self._execute_recursive(toward.toward)
                     var.code = toward.encode()
+                    # if not data
+                    if not toward.toward.is_data:
+                        var.is_data = False
+                        var.toward = None
             return var
         # is constant
         if type(toward) is data.Constant:

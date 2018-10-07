@@ -30,6 +30,8 @@ class Variable:
         self.is_method = False
 
         self.is_builtins = False
+        # callable or constant
+        self.is_data = True
 
     def has_attr(self, name: str):
         if self.name == name:

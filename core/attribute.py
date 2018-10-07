@@ -1,4 +1,5 @@
-from core.error import ConstError, RequiredError
+from core.error import ConstError, NotDataError, RequiredError
+from core.error import TypeError as _TypeError
 from core.expression import Expression as Exp
 
 
@@ -40,6 +41,9 @@ class Attr:
         self.code = None
         self.value = None
 
+        # callable or constant
+        self.is_data = True
+
     def get_value(self):
         if not self.reusable:
             self.value = self._calculate()
@@ -63,6 +67,8 @@ class Attr:
         return self.value is not None
 
     def _calculate(self):
+        if not self.is_data:
+            raise NotDataError(self.name)
         if self.toward is None:
             raise RequiredError(self.name)
         return self.to_value(self.toward)
@@ -137,7 +143,16 @@ class AttrOP(Attr):
     def _calculate(self):
         args = self.args.get_values()
         if self.op in self.MAP_OP.keys():
-            return self.MAP_OP[self.op](*args[:2])
+            # check type
+            args = args[:2]
+            for arg in args:
+                if not arg.is_data:
+                    raise NotDataError(arg.sub)
+            # check type (unexpected)
+            try:
+                return self.MAP_OP[self.op](*args)
+            except TypeError as e:
+                raise _TypeError(str(e))
         if self.op in Exp.IDX:
             return self._calculate_slice(args)
         raise NotImplementedError

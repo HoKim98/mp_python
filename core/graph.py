@@ -1,7 +1,6 @@
 from core.data import Builtins, Constant, Indexed, Operator, Required, Variable, View
 from core.error import RequiredError, SyntaxError
 from core.expression import Expression as Exp
-from core.io import IO
 
 
 class Graph:
