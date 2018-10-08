@@ -60,13 +60,12 @@ class Token:
     def call_method(cls, var, operands):
         # arguments
         if len(var.args) == 0:
-            if len(operands) >= 1:
-                # arguments must be tuple
-                operand = operands[0].range_to_tuple()
-                if operands[0].is_indices:
-                    var.args = operand.args
-                else:
-                    var.args = [operand]
+            # arguments must be tuple
+            operand = operands[0].range_to_tuple()
+            if operands[0].is_indices:
+                var.args = operand.args
+            else:
+                var.args = [operand]
             if len(operands) == 1:
                 return True, operands
             # chain shells
@@ -96,7 +95,7 @@ class Token:
                     for f in operands[1:]:
                         operate(root, f)
                 return None
-            # (return, iterate) values
+            # (iterate) values
             elif self.name in Exp.NEXT:
                 pass  # TODO next 구문을 어떻게 구현할 지 다시한번 생각할 것.
             # indices
@@ -134,6 +133,11 @@ class Token:
             var = graph.find(self.name)
             # is method or builtins
             if var.is_method:
+                # if pointing method
+                if len(self.args) == 0:
+                    var.is_method_delegate = True
+                    return var
+                # else
                 no_more_args, operands = self.call_method(var, operands)
                 if no_more_args:
                     return var
@@ -141,6 +145,11 @@ class Token:
             elif var.toward is not None:
                 if var.toward.is_method:
                     var.toward = var.toward.copy()
+                    # if pointing method
+                    if len(self.args) == 0:
+                        var.is_method_delegate = True
+                        return var
+                    # else
                     no_more_args, operands = self.call_method(var.toward, operands)
                     if no_more_args:
                         return var

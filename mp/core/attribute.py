@@ -47,6 +47,7 @@ class Attr:
     def get_value(self):
         if not self.reusable:
             self.value = self._calculate()
+            self.is_data = self.toward.is_data
         return self.value
 
     @property
@@ -196,6 +197,22 @@ class AttrIndexed(AttrOP):
         pass
 
 
+class AttrMethod(Attr):
+    def __init__(self, name: str, method, toward, args):
+        super().__init__(name, toward)
+        self.method = method
+        self.args = args
+
+    @property
+    def reusable(self):
+        return False
+
+    def _calculate(self):
+        result = self.method(self.toward, self.args)
+        self.is_data = self.toward.is_data
+        return result
+
+
 class AttrDict:
 
     def __init__(self):
@@ -210,4 +227,4 @@ class AttrDict:
         return Attr(key)
 
 
-attr_classes = (Attr, AttrConst, AttrIndexed, AttrOP, AttrView)
+attr_classes = (Attr, AttrConst, AttrIndexed, AttrMethod, AttrOP, AttrView)

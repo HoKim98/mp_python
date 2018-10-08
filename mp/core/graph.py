@@ -1,4 +1,4 @@
-from mp.core.data import Builtins, Constant, Indexed, Operator, Required, Variable, View
+from mp.core.data import Builtins, Constant, Indexed, Method, Operator, Required, Variable, View
 from mp.core.error import RequiredError, SyntaxError
 from mp.core.expression import Expression as Exp
 
@@ -60,8 +60,8 @@ class Graph:
     def rename(self, name_from, name_to):
         old = self.vars[name_from]
         # if old is required
-        if old.toward is None:
-            raise RequiredError(name_from)
+        # if old.toward is None:
+        #     raise RequiredError(name_from)
         old.name = name_to
         self.vars[name_to] = old
         del self.vars[name_from]
@@ -76,6 +76,19 @@ class Graph:
             sub.args = args
             return sub
         raise SyntaxError(name)
+
+    # call function or get indices
+    def define_method(self, name, method):
+        self.rename(name, self.new_name())
+        obj = Method(method.sub, *method.args)
+        sub = Method(name, obj)
+        obj.is_method_delegate = True
+        sub.is_method_delegate = True
+        obj.is_data = False
+        sub.is_data = False
+        sub.name = name
+        self.vars[name] = sub
+        return sub
 
     # (:, :, ...)
     def indices(self, *args):
@@ -122,9 +135,13 @@ class Graph:
 
     # for in-place operators
     def _inplace(self, sub, obj):
-        if obj.has_attr(sub.name):
-            name = sub.name
-            self.rename(name, self.new_name())
+        name = sub.name
+        # if pointing method
+        if obj.is_method_delegate:
+            self.define_method(name, obj)
+            return self.vars[name]
+        # else
+        if obj.has_attr(name):
             sub = self.alloc_f(name, obj)
             return sub
         sub.toward = obj

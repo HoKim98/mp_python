@@ -77,9 +77,13 @@ class AttrIndexed(_attribute.AttrIndexed):
         return sub[tuple(args)]
 
 
+class AttrMethod(_attribute.AttrMethod):
+    pass
+
+
 class AttrDict(_attribute.AttrDict):
     def _new_attr(self, key):
         return Attr(key)
 
 
-attr_classes = (Attr, AttrConst, AttrIndexed, AttrOP, AttrView)
+attr_classes = (Attr, AttrConst, AttrIndexed, AttrMethod, AttrOP, AttrView)

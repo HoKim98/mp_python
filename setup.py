@@ -1,3 +1,4 @@
+from m2r import parse_from_file
 from setuptools import find_packages, setup
 
 import mp
@@ -5,9 +6,10 @@ import mp
 
 # Read in the README for the long description on PyPI
 def long_description():
-    import io
-    with io.open('README.md', 'r', encoding='utf-8') as f:
-        readme = f.read()
+    # (m2r) .md to .rst
+    readme = parse_from_file('README.md')
+    with open('README.rst', 'w') as f:
+        f.write(readme)
     return readme
 
 

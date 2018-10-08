@@ -4,7 +4,8 @@ from mp.core.expression import Expression as Exp
 def _range_to_tuple(self):
     if self is None:
         return None
-    return self.range_to_tuple()
+    result = self.range_to_tuple()
+    return result
 
 
 class Variable:
@@ -28,6 +29,7 @@ class Variable:
         self.is_indices = False
         self.is_view = False
         self.is_method = False
+        self.is_method_delegate = False
 
         self.is_builtins = False
         # callable or constant
@@ -80,6 +82,9 @@ class Variable:
         stack_called.append(name)
         # = :=
         op = Exp.OIS[0] if self.is_pointer_orient else Exp.IS[0]
+        # if pointing method
+        if self.is_method:
+            toward = self.toward.sub
         return '(%s%s%s)' % (name, op, toward)
 
     @staticmethod
@@ -274,8 +279,21 @@ class Method(Variable):
 
     def encode(self, stack_called=None):
         stack_called = self._ensure_stack_not_none(stack_called)
+        sub = self.sub
+        # if pointing method
+        if self.is_method_delegate:
+            # if already defined
+            if sub in stack_called:
+                return '%s' % sub
+            # else
+            stack_called.append(sub)
+            if len(self.args) >= 1:
+                toward = self.args[0]
+                return '(%s=%s)' % (sub, toward.encode(stack_called))
+            return '%s' % sub
+        stack_called = self._ensure_stack_not_none(stack_called)
         args = [self._encode(arg, stack_called) for arg in self.args]
-        return '%s(%s)' % (self.sub, ','.join(args))
+        return '%s(%s)' % (sub, ','.join(args))
 
     def __repr__(self):
         return '%s( %s )' % (self.sub, ', '.join([repr(arg) for arg in self.args]))

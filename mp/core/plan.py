@@ -20,13 +20,14 @@ class Plan:
 
     # execute along IO
     def execute(self):
+        self.graph.lock_point = True
         try:
-            self.graph.lock_point = True
             for var_name, append in self.graph.ios.items():
                 var = self.graph.vars[var_name]
                 # save
                 if append:
                     value = self._execute_recursive(var)
+                    value.get_value()
                 # delete
                 else:
                     value = None
@@ -96,7 +97,20 @@ class Plan:
             return op
         # is slicing
         if type(toward) is data.Indexed:
+            # if pointing method
             args = self.ATTR.AttrList(toward.args, self._execute_recursive)
+            if toward.sub.is_method_delegate:
+                method = toward.sub
+                while len(method.args) >= 1:
+                    method = method.args[0]
+                sub = method.sub
+                if sub in Exp.BUILTINS:
+                    external_method = Exp.BUILTINS[sub]
+                else:
+                    raise NotImplementedError
+                method = self.ATTR.AttrMethod(sub, external_method, toward, args)
+                return method
+            # else
             sub = self._execute_recursive(toward.sub)
             op = self.ATTR.AttrIndexed(sub, args)
             return op
@@ -108,11 +122,19 @@ class Plan:
             return op
         # is method
         if type(toward) is data.Method:
-            args = self.ATTR.AttrList(toward.args, self._execute_recursive)
+            sub = toward.sub
+            args = toward.args
+            # if pointing method
+            if toward.is_method_delegate:
+                toward.is_data = False
+                return None
+            # else
+            args = self.ATTR.AttrList(args, self._execute_recursive)
             # external methods
-            if toward.sub in Exp.BUILTINS:
-                external_method = Exp.BUILTINS[toward.sub]
-                return external_method(toward, args)
+            if sub in Exp.BUILTINS:
+                external_method = Exp.BUILTINS[sub]
+                method = self.ATTR.AttrMethod(sub, external_method, toward, args)
+                return method
         raise NotImplementedError
 
     # find variable from file-system
@@ -149,5 +171,6 @@ class Plan:
         if value is not None:
             value.update_graph(self.graph)
 
-    def get_builtin_methods(self):
-        return [t for t in dir(self.BUILTINS) if not t.startswith('_')], self.BUILTINS
+    @classmethod
+    def get_builtin_methods(cls):
+        return [t for t in dir(cls.BUILTINS) if not t.startswith('_')], cls.BUILTINS

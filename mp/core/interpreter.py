@@ -193,7 +193,8 @@ class Interpreter:
         self.dir_process = os.path.join(dir_process)
         plan = Plan if plan is None else plan
         self.plan = plan(dir_process, self.code_to_data)
-        self._init_builtin_methods()
+        self._init_builtin_methods(Plan)
+        self._init_builtin_methods(self.plan)
 
     @classmethod
     def add_module(cls, module_name: str, module_func):
@@ -227,8 +228,8 @@ class Interpreter:
         if lazy_execute:
             self.plan.execute()
 
-    def _init_builtin_methods(self):
-        external_methods, modules = self.plan.get_builtin_methods()
+    def _init_builtin_methods(self, plan):
+        external_methods, modules = plan.get_builtin_methods()
         for module_name in external_methods:
             module_func = getattr(modules, module_name)
             Exp.BUILTINS[module_name] = module_func
