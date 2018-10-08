@@ -73,11 +73,14 @@ class Variable:
         toward = self._encode(self.toward, stack_called)
         if self._name_is_constant():
             return toward
-        if self.name in stack_called:
-            return '%s' % self.name
-        stack_called.append(self.name)
+        name = self.name
+        # if already defined
+        if name in stack_called:
+            return '%s' % name
+        stack_called.append(name)
+        # = :=
         op = Exp.OIS[0] if self.is_pointer_orient else Exp.IS[0]
-        return '(%s%s%s)' % (self.name, op, toward)
+        return '(%s%s%s)' % (name, op, toward)
 
     @staticmethod
     def _encode(self, stack_called):
