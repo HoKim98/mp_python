@@ -1,7 +1,7 @@
 import os
 
-from core.expression import Expression as Exp
-from core.data import Constant
+from mp.core.expression import Expression as Exp
+from mp.core.data import Constant
 
 
 class IO:

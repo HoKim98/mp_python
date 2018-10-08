@@ -1,7 +1,7 @@
-from core.expression import Expression as Exp
 import numpy as np
 
-from core import attribute as _attribute
+from mp.core import attribute as _attribute
+from mp.core.expression import Expression as Exp
 
 
 map_num_type = {

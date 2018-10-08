@@ -1,5 +1,5 @@
-from core import error
-from core.expression import Expression as Exp
+from mp.core import error
+from mp.core.expression import Expression as Exp
 
 
 class Token:

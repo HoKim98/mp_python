@@ -1,7 +1,6 @@
-from core import error
-
-from engine.python import attribute as attr
-from engine.python.attribute import np as _np
+from mp.core import error
+from mp.engine.python import attribute as attr
+from mp.engine.python.attribute import np as _np
 
 _print = print
 _max = max
@@ -20,6 +19,7 @@ def array(toward, args):
 def print(toward, args):
     values = args.get_values()
     for arg, value in zip(args.list, values):
+        _print(arg, value)
         output = '%s = %s' % (arg.name, value)
         _print(output)
     toward.is_data = False

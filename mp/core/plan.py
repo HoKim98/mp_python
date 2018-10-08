@@ -1,10 +1,10 @@
-from core import attribute as _attribute
-from core import builtins as _builtins
-from core import data
-from core.error import BaseError, RequiredError
-from core.expression import Expression as Exp
-from core.graph import Graph
-from core.io import IO
+from mp.core import attribute as _attribute
+from mp.core import builtins as _builtins
+from mp.core import data
+from mp.core.error import BaseError, RequiredError
+from mp.core.expression import Expression as Exp
+from mp.core.graph import Graph
+from mp.core.io import IO
 
 
 class Plan:
@@ -47,7 +47,8 @@ class Plan:
             return None
         # if required
         if toward.is_required:
-            toward = self._find_variable(toward)
+            var = self._find_variable(toward)
+            return var
         # is variable
         if type(toward) is data.Variable:
             var = self.attr[toward.name]
@@ -55,16 +56,13 @@ class Plan:
             if toward.is_pointer:
                 toward.is_pointer = False
                 try:
-                    toward = self._find_variable(toward)
-                    var.toward = self._execute_recursive(toward.toward)
-                    var.code = toward.encode()
-                    return var
+                    var = self._find_variable(toward)
                 # file not exist
                 except RequiredError:
-                    pass
-            # if changed
+                    var.toward = self._execute_recursive(toward.toward)
+                    var.code = toward.encode()
+            # if changed or not data
             if toward.toward is not None:
-                # if changed or not data
                 if toward.encode() != var.code or not var.is_data:
                     var.toward = self._execute_recursive(toward.toward)
                     var.code = toward.encode()
@@ -132,13 +130,13 @@ class Plan:
             values = list(self.code_to_data(value))
             for value in values:
                 self.push(value)
-            self._execute_recursive(toward)
-            return toward
+            var = self._execute_recursive(toward)
+            return var
         # if binary
         elif type(value) is data.Constant:
             toward.toward = value
-            self._execute_recursive(toward)
-            return toward
+            var = self._execute_recursive(toward)
+            return var
         raise NotImplementedError
 
     # return new constant

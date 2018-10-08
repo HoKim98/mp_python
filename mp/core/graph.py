@@ -1,6 +1,6 @@
-from core.data import Builtins, Constant, Indexed, Operator, Required, Variable, View
-from core.error import RequiredError, SyntaxError
-from core.expression import Expression as Exp
+from mp.core.data import Builtins, Constant, Indexed, Operator, Required, Variable, View
+from mp.core.error import RequiredError, SyntaxError
+from mp.core.expression import Expression as Exp
 
 
 class Graph:
@@ -97,7 +97,7 @@ class Graph:
         return Operator(op, sub, obj)
 
     # save sometime
-    def save(self, dir_from, *args):
+    def save(self, dir_from, *args, save=True):
         if dir_from is not None:
             if type(dir_from) is not Variable:
                 raise SyntaxError(dir_from.symbol)
@@ -111,13 +111,14 @@ class Graph:
                 self._inplace(self.find(name), file)
             else:
                 name = file.name
-            self.ios[name] = file.toward is not None
+            self.ios[name] = save
+            # self.ios[name] = file.toward is not None
 
     # delete sometime
     def delete(self, dir_from, *args):
         for file in args:
             file.toward = None
-        self.save(dir_from, *args)
+        self.save(dir_from, *args, save=False)
 
     # for in-place operators
     def _inplace(self, sub, obj):

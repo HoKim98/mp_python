@@ -1,4 +1,4 @@
-from core.expression import Expression as Exp
+from mp.core.expression import Expression as Exp
 
 
 def _range_to_tuple(self):
@@ -176,22 +176,26 @@ class Operator(Variable):
     def symbol(self):
         return self.op
 
-    def encode(self, stack_called=None):   # TODO inplace 연산자를 outplace로 변환
+    def encode(self, stack_called=None):
         stack_called = self._ensure_stack_not_none(stack_called)
-        if self.op in Exp.Tokens_Shell:
+        # inplace to outplace
+        op = self.op
+        if op in Exp.Tokens_In2Out.keys():
+            op = Exp.Tokens_In2Out[op]
+        if op in Exp.Tokens_Shell:
             args = [self.sub, self.obj, self.step]
             args = [self._encode(arg, stack_called) for arg in args if arg is not None]
-            shell_open = self.op[0]
-            shell_close = self.op[-1]
+            shell_open = op[0]
+            shell_close = op[-1]
             return '%s%s%s' % (shell_open, ','.join(args), shell_close)
-        elif self.op in Exp.IDX:
+        elif op in Exp.IDX:
             sub = self._encode(self.sub, stack_called)
             obj = self._encode(self.obj, stack_called)
             step = self._encode(self.step, stack_called)
-            obj = '%s%s' % (self.op, obj) if obj is not None else '%s' % self.op
-            step = '%s%s' % (self.op, step) if step is not None else ''
+            obj = '%s%s' % (op, obj) if obj is not None else '%s' % op
+            step = '%s%s' % (op, step) if step is not None else ''
             return '%s%s%s' % (sub, obj, step)
-        return '(%s%s%s)' % (self._encode(self.sub, stack_called), self.op, self._encode(self.obj, stack_called))
+        return '(%s%s%s)' % (self._encode(self.sub, stack_called), op, self._encode(self.obj, stack_called))
 
     def __repr__(self):
         return '%s{ %s, %s, %s }' % (self.op, self.sub, self.obj, self.step)

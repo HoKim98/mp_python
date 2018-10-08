@@ -1,5 +1,5 @@
-from core.io import IO as _IO
-from engine.python import attribute as _attr
+from mp.core.io import IO as _IO
+from mp.engine.python import attribute as _attr
 
 
 class IO(_IO):

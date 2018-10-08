@@ -110,5 +110,11 @@ class Expression:
             (NUMBER,): 7, (VARIABLE,): 7, (TUPLE,): 7,
             tuple(RBO): 8, tuple(ABO): 8, tuple(SBO): 8,
             tuple(SHELL_RR): 8, tuple(SHELL_RS): 8, tuple(SHELL_SR): 8, tuple(SHELL_SS): 8, tuple(SHELL_AA): 8,
-        }
+    }
     Tokens_Order = {op: order for ops, order in Tokens_Order.items() for op in ops}
+
+    Tokens_In2Out = {
+            tuple(IADD): ADD[0], tuple(ISUB): SUB[0], tuple(IMUL): MUL[0], tuple(ITDIV): TDIV[0],
+            tuple(IMAT): MAT[0], tuple(IMOD): MOD[0], tuple(IPOW): POW[0], tuple(IFDIV): FDIV[0],
+    }
+    Tokens_In2Out = {op: order for ops, order in Tokens_In2Out.items() for op in ops}

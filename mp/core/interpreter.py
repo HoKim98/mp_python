@@ -1,12 +1,12 @@
 import os
 
-from core import error
-from core.token import Token
-from core.error import IOError
-from core.expression import Expression as Exp
-from core.plan import Plan
+from mp.core import error
+from mp.core.token import Token
+from mp.core.error import IOError
+from mp.core.expression import Expression as Exp
+from mp.core.plan import Plan
 
-from utils import interactive as _interactive
+from mp.utils import interactive as _interactive
 
 
 class TokenTree(list):
@@ -188,13 +188,24 @@ class TokenTree(list):
 
 
 class Interpreter:
-    VERSION = '0.1.1'
 
     def __init__(self, dir_process: str = './', plan=None):
         self.dir_process = os.path.join(dir_process)
         plan = Plan if plan is None else plan
         self.plan = plan(dir_process, self.code_to_data)
         self._init_builtin_methods()
+
+    @classmethod
+    def add_module(cls, module_name: str, module_func):
+        Exp.BUILTINS[module_name] = module_func
+
+    def code_to_data(self, message: str):
+        lines = message.split(Exp.NEXTLINE)
+        for line in lines:
+            tokens = self._scanner(line)
+            prefixes, query = self._parser(tokens)
+            data = self._semantic_analysis(prefixes, query)
+            yield data
 
     def execute_script(self, var_name: str):
         path = self.plan.io.get_path(var_name, self.dir_process)
@@ -205,9 +216,16 @@ class Interpreter:
             msg = f.read()
             self(msg)
 
-    @classmethod
-    def add_module(cls, module_name: str, module_func):
-        Exp.BUILTINS[module_name] = module_func
+    def begin_interactive(self):
+        _interactive(self)
+
+    def __call__(self, message: str, lazy_execute: bool = True):
+        for data in self.code_to_data(message):
+            self.plan.push(data)
+            if not lazy_execute:
+                self.plan.execute()
+        if lazy_execute:
+            self.plan.execute()
 
     def _init_builtin_methods(self):
         external_methods, modules = self.plan.get_builtin_methods()
@@ -553,22 +571,3 @@ class Interpreter:
                 raise error.SyntaxError(op)
         # just data
         return query
-
-    def begin_interactive(self):
-        _interactive(self)
-
-    def code_to_data(self, message: str):
-        lines = message.split(Exp.NEXTLINE)
-        for line in lines:
-            tokens = self._scanner(line)
-            prefixes, query = self._parser(tokens)
-            data = self._semantic_analysis(prefixes, query)
-            yield data
-
-    def __call__(self, message: str, lazy_execute: bool = True):
-        for data in self.code_to_data(message):
-            self.plan.push(data)
-            if not lazy_execute:
-                self.plan.execute()
-        if lazy_execute:
-            self.plan.execute()

@@ -1,5 +1,5 @@
-from core import Interpreter as _Interpreter
-from engine.python.plan import Plan as _Plan
+from mp.core import Interpreter as _Interpreter
+from mp.engine.python.plan import Plan as _Plan
 
 
 class Interpreter(_Interpreter):

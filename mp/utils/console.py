@@ -1,7 +1,8 @@
 import cmd
 import os
 
-from core.error import BaseError
+from mp.core.error import BaseError
+from mp.version import __version__
 
 
 class _Colors:
@@ -28,7 +29,7 @@ class _Interactive(cmd.Cmd):
     def _set_intro(self):
         intro  = '----------------------------------------------\n'
         intro += '   Machine Pseudo-Code                        \n'
-        intro += '                           v.%s\n' % self.interpreter.VERSION
+        intro += '                           v.%s\n' % __version__
         intro += '----------------------------------------------'
         self.intro = intro
 

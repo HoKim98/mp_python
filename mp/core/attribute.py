@@ -1,6 +1,6 @@
-from core.error import ConstError, NotDataError, RequiredError
-from core.error import TypeError as _TypeError
-from core.expression import Expression as Exp
+from mp.core.error import ConstError, NotDataError, RequiredError
+from mp.core.error import TypeError as _TypeError
+from mp.core.expression import Expression as Exp
 
 
 map_num_type = {
@@ -146,8 +146,9 @@ class AttrOP(Attr):
             # check type
             args = args[:2]
             for arg in args:
-                if not arg.is_data:
-                    raise NotDataError(arg.sub)
+                if hasattr(arg, 'is_data'):
+                    if not arg.is_data:
+                        raise NotDataError(arg.sub)
             # check type (unexpected)
             try:
                 return self.MAP_OP[self.op](*args)
