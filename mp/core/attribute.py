@@ -43,11 +43,16 @@ class Attr:
 
         # callable or constant
         self.is_data = True
+        self.is_method = False
+
+        # repeat call
+        self.repeat = None
 
     def get_value(self):
         if not self.reusable:
             self.value = self._calculate()
-            self.is_data = self.toward.is_data
+            if self.toward is not None:
+                self.is_data = self.toward.is_data
         return self.value
 
     @property
@@ -122,8 +127,14 @@ class AttrList:
     def get_values(self):
         return [self.ATTR.to_value(arg) for arg in self.list]
 
+    def __getitem__(self, item):
+        raise NotImplementedError
+
     def __repr__(self):
         return repr(self.list)
+
+    def __len__(self):
+        return len(self.list)
 
 
 class AttrOP(Attr):
@@ -198,17 +209,33 @@ class AttrIndexed(AttrOP):
 
 
 class AttrMethod(Attr):
-    def __init__(self, name: str, method, toward, args):
+    def __init__(self, name: str, method, toward, args, repeat=None):
         super().__init__(name, toward)
+        self.is_method = True
         self.method = method
         self.args = args
+
+        self.code = toward.encode()
+        self.repeat = repeat
 
     @property
     def reusable(self):
         return False
 
     def _calculate(self):
-        result = self.method(self.toward, self.args)
+        # if pointing method
+        if self.args is None:
+            self.is_data = False
+            return None
+        # if repeat call
+        result = None
+        if self.repeat is not None:
+            num_repeat = int(self.repeat.get_value())
+            for _ in range(num_repeat):
+                result = self.method(self.toward, self.args)
+        # else
+        else:
+            result = self.method(self.toward, self.args)
         self.is_data = self.toward.is_data
         return result
 

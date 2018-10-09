@@ -116,7 +116,7 @@ class Graph:
                 raise SyntaxError(dir_from.symbol)
             dir_from = dir_from.symbol
         for file in args:
-            if type(file) is not Variable:
+            if type(file) not in (Variable, Method):
                 raise SyntaxError(file.symbol)
             # copy data
             if dir_from is not None:
