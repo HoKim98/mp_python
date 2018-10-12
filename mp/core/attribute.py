@@ -4,6 +4,7 @@ from mp.core.expression import Expression as Exp
 
 
 map_num_type = {
+    'b': NotImplemented,
     'i8': NotImplemented,
     'i16': NotImplemented,
     'i32': NotImplemented,
@@ -56,6 +57,12 @@ class Attr:
         return self.value
 
     @property
+    def symbol(self):
+        if self.name.startswith('/'):
+            return self.toward.symbol
+        return self.name
+
+    @property
     def is_constant(self):
         return False
 
@@ -74,9 +81,9 @@ class Attr:
 
     def _calculate(self):
         if not self.is_data:
-            raise NotDataError(self.name)
+            raise NotDataError(self.symbol)
         if self.toward is None:
-            raise RequiredError(self.name)
+            raise RequiredError(self.symbol)
         return self.to_value(self.toward)
 
     @classmethod
@@ -92,6 +99,10 @@ class AttrConst(Attr):
         super().__init__('const')
         self.code = code
         self.value = value
+
+    @property
+    def symbol(self):
+        return self.name
 
     @property
     def is_constant(self):
@@ -145,6 +156,10 @@ class AttrOP(Attr):
         self.args = args
 
     @property
+    def symbol(self):
+        return self.name
+
+    @property
     def op(self) -> str:
         return self.name
 
@@ -157,10 +172,12 @@ class AttrOP(Attr):
         if self.op in self.MAP_OP.keys():
             # check type
             args = args[:2]
-            for arg in args:
+            for arg, var_arg in zip(args, self.args.list):
                 if hasattr(arg, 'is_data'):
                     if not arg.is_data:
-                        raise NotDataError(arg.sub)
+                        raise NotDataError(var_arg.symbol)
+                elif arg is None:
+                    raise NotDataError(var_arg.symbol)
             # check type (unexpected)
             try:
                 return self.MAP_OP[self.op](*args)
@@ -179,6 +196,10 @@ class AttrView(AttrOP):
         super().__init__(Exp.SHELL_AA[0], args)
         self.sub = sub
 
+    @property
+    def symbol(self):
+        return self.sub.symbol
+
     def _calculate(self):
         sub = self.sub.get_value()
         args = self.args.get_values()
@@ -195,6 +216,10 @@ class AttrIndexed(AttrOP):
     def __init__(self, sub: Attr, args):
         super().__init__(Exp.SHELL_RR[0], args)
         self.sub = sub
+
+    @property
+    def symbol(self):
+        return self.sub.symbol
 
     def _calculate(self):
         sub = self.sub.get_value()
@@ -217,6 +242,10 @@ class AttrMethod(Attr):
 
         self.code = toward.encode()
         self.repeat = repeat
+
+    @property
+    def symbol(self):
+        return self.name
 
     @property
     def reusable(self):

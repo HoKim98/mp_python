@@ -5,6 +5,7 @@ from mp.core.expression import Expression as Exp
 
 
 map_num_type = {
+    'b': np.bool,
     'i8': np.int8,
     'i16': np.int16,
     'i32': np.int32,

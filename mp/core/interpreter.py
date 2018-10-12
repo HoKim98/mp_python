@@ -15,6 +15,9 @@ class TokenTree(list):
         self.parent = parent
         self.head = head
         self.pointer = 0
+        # for indexing (:)
+        self.breakpoint = 0
+        self.has_subject = False
 
     @classmethod
     def _is_number(cls, token_cat):
@@ -31,17 +34,26 @@ class TokenTree(list):
         # find type
         try:
             token_cat = token_cat.lower()
-            for t_name, t_func in zip([Exp.INT, Exp.FLOAT], [int, float]):
+            for t_name, t_func in zip([Exp.BOOL, Exp.INT, Exp.FLOAT], [bool, int, float]):
                 try:
                     idx = token_cat.index(t_name)
                     try:
-                        num = t_func(token_cat[:idx])
+                        # is boolean
+                        if t_name == Exp.BOOL:
+                            num = t_func(int(token_cat[:idx]))
+                        # is numeric
+                        else:
+                            num = t_func(token_cat[:idx])
                     except ValueError:
                         try:
                             num = float(token_cat[:idx])
                             num = t_func(num)
                         except ValueError:
                             continue
+                    # is boolean
+                    if t_name == Exp.BOOL:
+                        return num, '%s' % t_name
+                    # is numeric
                     n_bits = int(token_cat[idx+1:])
                     if n_bits in [8, 16, 32, 64]:
                         return num, '%s%d' % (t_name, n_bits)
@@ -76,7 +88,7 @@ class TokenTree(list):
             while len(self) >= 1:
                 if self[0].head == Exp.VARIABLE:
                     if len(self[0]) == 0:
-                        del self[0]
+                        self.pop(0)
                         continue
                 break
             tokens = token_cat.split(Exp.DOT)
@@ -86,17 +98,40 @@ class TokenTree(list):
             self.pointer = len(self)
 
     def close(self, token_end: str):
-        if self.head in Exp.Tokens_Open and token_end in Exp.Tokens_Close:
-            shell = self.head + token_end
-            if shell not in Exp.Tokens_Shell:
-                raise error.SyntaxError(shell[-1])
-            if shell in Exp.SHELL_RR and len(self) == 1 and self[0].head in Exp.Tokens_Order:
-                last_object = self[0]
-                del self[0]
+        # make shell shape
+        shell = self.head + token_end
+        if shell not in Exp.Tokens_Shell:
+            raise error.SyntaxError(token_end)
+        if shell in Exp.SHELL_RR and not self.has_subject and len(self) == 1:
+            item = self[0]
+            # remove shell () if shell is tuple, and the only item is an operator or shells
+            if item.head in Exp.Tokens_Operator + Exp.SHELL_RR + [Exp.VARIABLE]:
+                last_object = self.pop()
                 self.__iadd__(last_object)
                 self.head = last_object.head
-            else:
-                self.head = shell
+                self.has_subject = item.has_subject
+                self.breakpoint = item.breakpoint
+                return
+        self.head = shell
+        return
+
+    def insert_inner(self, w):
+        new_object = TokenTree(self, w)
+        self.append(new_object)
+        return new_object
+
+    def insert_upper(self, w):
+        last_object = self.pop(-1)
+        new_object = self.insert_inner(w)
+        new_object.append(last_object)
+        last_object.parent = new_object
+        return new_object
+
+    def insert_root(self, w):
+        new_object = TokenTree(None, w)
+        new_object.append(self)
+        self.parent = new_object
+        return new_object
 
     def append(self, target):
         super().append(target)
@@ -112,10 +147,10 @@ class TokenTree(list):
     def check_sizeof(self):
         if self.head in [Exp.NUMBER, Exp.VARIABLE, ]:
             pass
-        elif self.head in ['t'] + Exp.Tokens_Shell:
+        elif self.head in Exp.Tokens_Shell:
             pass
         elif self.head in Exp.IDX:
-            if 1 <= len(self) <= 2:
+            if 1 <= len(self) <= 3:
                 pass
             else:
                 raise error.SyntaxError(self.head)
@@ -126,12 +161,6 @@ class TokenTree(list):
                 token.check_sizeof()
 
     def to_data(self):
-        # separate indices from range
-        if self.head in Exp.SHELL_RR:
-            # not (2 <= len(self) <= 3):
-            if not len(self) == 2:
-                self.head = Exp.TUPLE
-
         # is number
         if self.head == Exp.NUMBER:
             return Token.from_number(self[1], self[0])
@@ -143,48 +172,29 @@ class TokenTree(list):
             while i < len(self):
                 name_next = self[i]
                 if type(name_next) is str:
-                    name = '%s.%s' % (name, name_next)
+                    name = '%s%s%s' % (name, Exp.DOT, name_next)
                     i += 1
                 else:
                     break
-            # stack indices
-            list_indices = []
-            for indices in self[i:]:
-                indices = indices.to_data()
-                # escape shell
-                while True:
-                    if indices.name in Exp.SHELL_RR:
-                        indices.name = Exp.TUPLE
-                        indices.data_type = Token.TYPE_TUPLE
-                        if len(indices.args) != 1:
-                            break
-                        indices = indices.args[0]
-                        continue
-                    if indices.data_type != Token.TYPE_TUPLE:
-                        break
-                    if len(indices.args) != 1:
-                        break
-                    indices = indices.args[0]
-                list_indices.append(indices)
-            return Token.from_var(name, *list_indices)
-        # is tuple
-        if self.head == Exp.TUPLE:
-            data = [token.to_data() for token in self]
-            return Token.from_tuple(*data)
+            return Token.from_var(name)
         # is operator
-        if self.head in Exp.Tokens_Order.keys():
+        if self.head in Exp.Tokens_Operator:
             data = [token.to_data() for token in self]
             return Token.from_operator(self.head, *data)
+        # if ()
+        if self.head in Exp.SHELL_RR:
+            data = [token.to_data() for token in self]
+            if self.has_subject:
+                return Token.from_range(self.head, *data)
+            return Token.from_tuple(*data)
         # is range
-        if self.head in Exp.Tokens_Range:
-            # if not (2 <= len(self) <= 3):
-            if not len(self) == 2:
-                raise error.SyntaxError(self.head[0])
+        if self.head in Exp.Tokens_Shell:
             data = [token.to_data() for token in self]
             return Token.from_range(self.head, *data)
 
     def __repr__(self):
-        return self.head + '{ ' + ', '.join([repr(token) for token in self]) + ' }'
+        has_subject = 'T' if self.has_subject else ''
+        return has_subject + self.head + '{ ' + ', '.join([repr(token) for token in self]) + ' }'
 
 
 class Interpreter:
@@ -288,7 +298,7 @@ class Interpreter:
 
     @classmethod
     def _parser(cls, tokens):
-        prefixes = TokenTree(None, Exp.TUPLE)
+        prefixes = TokenTree(None, Exp.SHELL_RR[0])
 
         query = TokenTree(None, Exp.VARIABLE)
         object_attr = query
@@ -316,41 +326,29 @@ class Interpreter:
                         pass
                     else:
                         raise error.SyntaxError(w)
+
             # attribute
             if w == Exp.COMMA:
+                # move to shell
                 while object_attr.head not in Exp.Tokens_Open:
+                    object_attr.tokenize()
                     last_object = object_attr.parent
                     # indices
                     if object_attr.head in Exp.IDX:
                         if last_object is None:
                             raise error.SyntaxError(object_attr.head)
-                        object_attr.tokenize()
                         object_attr = last_object
-                        break
-                    # substitute
-                    elif object_attr.head in Exp.Tokens_Inplace:
-                        object_attr.tokenize()
-                        last_object = object_attr.pop(-1)
-                        new_object = TokenTree(object_attr, Exp.TUPLE)
-                        new_object.append(last_object)
-                        object_attr.append(new_object)
-                        object_attr = new_object
-                        break
-                    # tuple
-                    elif object_attr.head == Exp.TUPLE:
-                        object_attr.tokenize()
                         break
                     # new tuple
-                    elif last_object is None:
-                        query = new_object = TokenTree(None, Exp.TUPLE)
-                        object_attr.parent = new_object
-                        new_object.append(object_attr)
-                        object_attr = new_object
+                    if last_object is None:
+                        query = object_attr = object_attr.insert_root(Exp.SHELL_RR[0])
+                        object_attr.has_subject = False
                         break
-                    else:
-                        object_attr.tokenize()
-                        object_attr = last_object
+                    # else : goto upper
+                    object_attr = last_object
                 object_attr.tokenize()
+                object_attr.breakpoint = object_attr.pointer
+
             # prefixes
             elif w in Exp.Tokens_Prefix:
                 # not from- prefix
@@ -369,24 +367,142 @@ class Interpreter:
                     prefixes.tokenize()
                     continue
                 raise error.SyntaxError(w)
-            # indices
+
+            # open shells
+            elif w in Exp.Tokens_Open:
+                object_attr.tokenize()
+                # in ()
+                if object_attr.head in Exp.RBO:
+                    # if empty shell : tuple
+                    if len(object_attr) == 0:
+                        # only ()
+                        if w not in Exp.RBO:
+                            raise error.SyntaxError(w)
+                        object_attr = object_attr.insert_inner(w)
+                        object_attr.has_subject = False
+                        continue
+                    # if comma ahead
+                    if len(object_attr) == object_attr.breakpoint:
+                        # only ()
+                        if w not in Exp.RBO:
+                            raise error.SyntaxError(w)
+                        object_attr = object_attr.insert_inner(w)
+                        object_attr.has_subject = False
+                        continue
+                    # else : decorate subject
+                    object_attr = object_attr.insert_upper(w)
+                    object_attr.has_subject = True
+                    object_attr.breakpoint = object_attr.pointer
+                    continue
+                # =
+                if object_attr.head in Exp.IS + Exp.DIS:
+                    # tuple
+                    if len(object_attr) == 1:
+                        # only ()
+                        if w not in Exp.RBO:
+                            raise error.SyntaxError(w)
+                        object_attr = object_attr.insert_inner(w)
+                        object_attr.has_subject = False
+                        continue
+                    # decorate object
+                    if len(object_attr) == 2:
+                        object_attr = object_attr.insert_upper(w)
+                        object_attr.has_subject = True
+                        object_attr.breakpoint = object_attr.pointer
+                        continue
+                    raise error.SyntaxError(w)
+                # just operators
+                if object_attr.head in Exp.Tokens_Operator:
+                    # must be tuple
+                    if len(object_attr) != 1:
+                        raise error.SyntaxError(w)
+                    # only ()
+                    if w not in Exp.RBO:
+                        raise error.SyntaxError(w)
+                    object_attr = object_attr.insert_inner(w)
+                    object_attr.has_subject = False
+                    continue
+                # exception : null query
+                if len(query) == 0:
+                    # only ()
+                    if w not in Exp.RBO:
+                        raise error.SyntaxError(w)
+                    query = object_attr = object_attr.insert_inner(w)
+                    object_attr.has_subject = False
+                    continue
+                raise error.SyntaxError(w)
+
+            # close shells
             elif w in Exp.Tokens_Close:
                 object_attr.tokenize()
-                while object_attr.head not in Exp.Tokens_Open:
-                    object_attr = object_attr.parent
-                    if object_attr is None:
-                        raise error.SyntaxError(w)
+                # move to shell pair
+                find_shell = False
+                while not find_shell:
+                    for shell_opens, shell_closes in Exp.Tokens_Shell_Pair.items():
+                        if object_attr.head in shell_opens:
+                            if w in shell_closes:
+                                find_shell = True
+                                break
+                    # opening not found
+                    if not find_shell:
+                        object_attr = object_attr.parent
+                        if object_attr is None:
+                            raise error.SyntaxError(w)
+                        object_attr.tokenize()
+                # close shell
                 object_attr.close(w)
                 object_attr = object_attr.parent
                 if object_attr is None:
                     raise error.SyntaxError(w)
-            elif w in Exp.Tokens_Order.keys():
+
+            # indices
+            elif w in Exp.IDX:
+                # move to indices shell '('
+                while object_attr.head not in Exp.RBO:
+                    # not other shells
+                    if object_attr.head in Exp.Tokens_Open:
+                        raise error.SyntaxError(w)
+                    object_attr.tokenize()
+                    object_attr = object_attr.parent
+                    if object_attr is None:
+                        raise error.SyntaxError(w)
+                object_attr.tokenize()
+                # no begin values
+                if len(object_attr) == object_attr.breakpoint:
+                    object_attr = object_attr.insert_inner(w)
+                    last_object = TokenTree(object_attr, Exp.NUMBER)
+                    last_object += [False, Exp.BOOL]
+                    object_attr.append(last_object)
+                    continue
+                # has start values
+                if len(object_attr) == object_attr.breakpoint + 1:
+                    # has stop values
+                    last_object = object_attr[-1]
+                    if last_object.head == w:
+                        # not stop value defined
+                        if len(last_object) == 1:
+                            object_attr = object_attr[-1]
+                            last_object = TokenTree(object_attr, Exp.NUMBER)
+                            last_object += [False, Exp.BOOL]
+                            object_attr.append(last_object)
+                            continue
+                        if len(last_object) == 2:
+                            object_attr = last_object
+                            continue
+                        raise error.SyntaxError(w)
+                    # no stop values
+                    object_attr = object_attr.insert_upper(w)
+                    continue
+                raise error.SyntaxError(w)
+
+            # operators
+            elif w in Exp.Tokens_Operator:
                 # 'n'umber, 'v'ariable, 't'uple
                 if w in Exp.ABSTRACT_TYPES:
                     object_attr.append(w)
                     continue
                 object_attr.tokenize()
-                # operator - for negative number
+                # unary operators (-)
                 if w in Exp.SUB:
                     # =
                     if len(object_attr) == 1:
@@ -407,64 +523,22 @@ class Interpreter:
                     object_attr = new_object
                 # higher order
                 if Exp.Tokens_Order[object_attr.head] < Exp.Tokens_Order[w]:
-                    # if shell
-                    if w in Exp.Tokens_Open:
-                        # check calling function
-                        if object_attr.head not in [Exp.NUMBER, Exp.VARIABLE, Exp.TUPLE]:
-                            if len(object_attr) == 2:
-                                if object_attr[-1].head == Exp.VARIABLE:
-                                    object_attr = object_attr[-1]
-                        new_object = TokenTree(object_attr, w)
-                        object_attr.append(new_object)
-                        object_attr = new_object
-                        continue
-                    last_object = object_attr.pop(-1)
-                    new_object = TokenTree(object_attr, w)
-                    new_object.append(last_object)
-                    object_attr.append(new_object)
-                    object_attr = new_object
+                    object_attr = object_attr.insert_upper(w)
+                    continue
                 # lower order
-                else:
-                    # if in shell
-                    if object_attr.head in Exp.Tokens_Open:
-                        # indices
-                        if w in Exp.IDX:
-                            last_object = TokenTree(object_attr, Exp.NUMBER)
-                            last_object += [0, Exp.INT_DEFAULT]
-                            if len(object_attr) > 0:
-                                if object_attr[-1].head not in Exp.IDX:
-                                    last_object = object_attr.pop(-1)
-                        elif len(object_attr) > 0:
-                            last_object = object_attr.pop(-1)
-                        # overlap shell
-                        elif w in Exp.Tokens_Open:
-                            new_object = TokenTree(object_attr, w)
-                            object_attr.append(new_object)
-                            object_attr = new_object
-                            continue
-                        else:
-                            raise error.SyntaxError(w)
-                        new_object = TokenTree(object_attr, w)
-                        new_object.append(last_object)
-                        object_attr.append(new_object)
-                        object_attr = new_object
-                        continue
-                    last_object = object_attr.parent
-                    if last_object is None:
-                        new_object = TokenTree(None, w)
-                        new_object.append(object_attr)
-                        object_attr.parent = new_object
-                        object_attr = new_object
-                        query = object_attr
-                        continue
-                    del last_object[-1]
-                    new_object = TokenTree(last_object, w)
-                    object_attr.parent = new_object
-                    last_object.append(new_object)
-                    new_object.append(object_attr)
-                    if new_object.parent is None:
-                        query = new_object
-                    object_attr = new_object
+                # if in shell
+                if object_attr.head in Exp.Tokens_Open:
+                    # put operators into shell
+                    object_attr = object_attr.insert_upper(w)
+                    continue
+                last_object = object_attr.parent
+                if last_object is None:
+                    query = object_attr = object_attr.insert_root(w)
+                    continue
+                object_attr = last_object.insert_upper(w)
+                if object_attr.parent is None:
+                    query = object_attr
+            # not operators
             elif w[0] in Exp.Signs_DoubleSingle:
                 raise error.SyntaxError(w)
             # append text
@@ -473,12 +547,13 @@ class Interpreter:
             # add content
             else:
                 object_attr.append(w)
+
         prefixes.tokenize()
         object_attr.tokenize()
+
         # variable overlap
         if object_attr.head == Exp.VARIABLE and len(object_attr) == 1:
-            last_object = object_attr[0]
-            del object_attr[0]
+            last_object = object_attr.pop(0)
             object_attr += last_object
             object_attr.head = last_object.head
 
@@ -488,7 +563,7 @@ class Interpreter:
 
         # check prefixes
         prefix_from_pair = True
-        prefixes_new = TokenTree(None, Exp.TUPLE)
+        prefixes_new = TokenTree(None, Exp.SHELL_RR[0])
         for token in prefixes:
             if token.head != Exp.VARIABLE:
                 raise error.SyntaxError(token[0])
@@ -530,7 +605,6 @@ class Interpreter:
             # save files
             if token in Exp.FROM:
                 prefix_from = next(prefixes_iter)
-                # prefix_from = Data.from_var(prefix_from[0])
                 prefix_from = Token.from_var(''.join(prefix_from))
             elif token in Exp.SAVE:
                 save_files += 1
@@ -554,8 +628,6 @@ class Interpreter:
                 continue
             if query.data_type == Token.TYPE_VARIABLE:
                 return func(prefix_from, query)
-            elif query.data_type == Token.TYPE_TUPLE:
-                return func(prefix_from, *query.args)
             else:
                 raise error.SyntaxError(op)
         # (iterate) values
@@ -566,8 +638,6 @@ class Interpreter:
                 raise error.SyntaxError(op)
             if query.data_type == Token.TYPE_VARIABLE:
                 return Token.from_operator(op, query)
-            elif query.data_type == Token.TYPE_TUPLE:
-                return Token.from_operator(op, *query.args)
             else:
                 raise error.SyntaxError(op)
         # just data

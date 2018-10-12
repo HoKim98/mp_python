@@ -1,4 +1,3 @@
-from mp.core import error
 from mp.core.expression import Expression as Exp
 
 
@@ -9,15 +8,12 @@ class Token:
     TYPE_NUMBER = 2
     TYPE_VARIABLE = 3
     TYPE_TUPLE = 4
-    TYPE_RANGE = 5
-    TYPE_SIZEOF = 6
-    TYPE_POINTER = 7
+    TYPE_SIZEOF = 5
 
-    def __init__(self, name: str, data_type: int, *args, toward=None):
+    def __init__(self, name: str, data_type: int, *args):
         self.name = name
         self.data_type = data_type
         self.args = args
-        self.toward = toward
 
     @classmethod
     def from_binary(cls, raw):
@@ -41,12 +37,8 @@ class Token:
         return Token(num_type, cls.TYPE_NUMBER, value)
 
     @classmethod
-    def from_var(cls, name, *list_indices):
-        return Token(name, cls.TYPE_VARIABLE, *list_indices)
-
-    @classmethod
-    def from_pointer(cls, name=''):
-        return Token(name, cls.TYPE_POINTER)
+    def from_var(cls, name):
+        return Token(name, cls.TYPE_VARIABLE)
 
     @classmethod
     def from_tuple(cls, *data):
@@ -54,23 +46,7 @@ class Token:
 
     @classmethod
     def from_range(cls, range_type, *data):
-        return Token(range_type, cls.TYPE_RANGE, *data)
-
-    @classmethod
-    def call_method(cls, var, operands):
-        # arguments
-        if len(var.args) == 0:
-            # arguments must be tuple
-            operand = operands[0].range_to_tuple()
-            if operands[0].is_indices:
-                var.args = operand.args
-            else:
-                var.args = [operand]
-            if len(operands) == 1:
-                return True, operands
-            # chain shells
-            operands = operands[1:]
-        return False, operands
+        return Token(range_type, cls.TYPE_OPERATOR, *data)
 
     def update_graph(self, graph):
         self.update_graph_recursive(graph)
@@ -78,13 +54,7 @@ class Token:
 
     def update_graph_recursive(self, graph):
         if self.data_type == self.TYPE_OPERATOR:
-            operands = list()
-            for arg in self.args:
-                if arg is None:
-                    operands.append(None)
-                    continue
-                operand = arg.update_graph_recursive(graph)
-                operands.append(operand)
+            operands = self._get_operands(self.args, graph)
             # (save, delete) files
             if self.name in Exp.SAVE + Exp.DELETE:
                 operate = graph.save if self.name in Exp.SAVE else graph.delete
@@ -98,86 +68,68 @@ class Token:
             # (iterate) values
             elif self.name in Exp.NEXT:
                 pass  # TODO next 구문을 어떻게 구현할 지 다시한번 생각할 것.
-            # indices
+            # slice
             elif self.name in Exp.IDX:
-                begin = operands[0]
-                end = operands[1] if len(operands) == 2 else None
-                return graph.slice(begin, end)
+                start = operands[0]
+                stop = operands[1] if len(operands) >= 2 else None
+                step = operands[2] if len(operands) == 3 else None
+                start = start if bool(start) else None
+                stop = stop if bool(stop) else None
+                return graph.slice(start, stop, step)
             # view
             elif self.name in Exp.SHELL_AA:
                 return graph.view(*operands)
-            # =
-            elif self.name in Exp.IS:
-                begin = operands[0]
-                end = operands[1]
-                # 'tuple = tuple'
-                if begin.is_indices and end.is_indices:
-                    if len(begin.args) != len(end.args):
-                        raise error.SyntaxError(self.name)
-                    for sub, obj in zip(begin.args, end.args):
-                        graph.operate(self.name, sub, obj)
-                    return operands[0]
+            # call method or indices
+            elif self.name in Exp.SHELL_RR:
+                # call method
+                sub = operands[0]
+                if sub.is_method_delegate:
+                    var = sub.copy()
+                    var.args = operands[1:]
+                    var.is_data = True
+                    var.is_method_delegate = False
+                    return var
+                # indices
+                return graph.indices(*operands)
+            # if repeat call
+            elif self.name in Exp.MUL:
+                # repeat call
+                sub = operands[0]
+                if sub.is_method_delegate:
+                    var = sub.copy()
+                    repeat = operands[1]
+                    # double multiply
+                    if var.repeat is not None:
+                        repeat = graph.operate(self.name, var.repeat, repeat)
+                    var.repeat = repeat
+                    return var
+                # normal multiply
                 else:
-                    return graph.operate(self.name, begin, end)
+                    return graph.operate(self.name, *operands)
             # just operators
             else:
                 return graph.operate(self.name, *operands)
+        # constant
         elif self.data_type == self.TYPE_NUMBER:
             return graph.alloc(self.name, self.args[0])
+        # variable or method (builtins)
         elif self.data_type == self.TYPE_VARIABLE:
-            operands = list()
-            for arg in self.args:
-                operand = arg.update_graph_recursive(graph)
-                operands.append(operand)
-            # callable
-            var = graph.find(self.name)
-            # is method or builtins
-            if var.is_method:
-                # if pointing method
-                if len(self.args) == 0:
-                    var.is_method_delegate = True
-                    return var
-                # else
-                no_more_args, operands = self.call_method(var, operands)
-                if no_more_args:
-                    return var
-            # refer to method or builtins
-            elif var.toward is not None:
-                if var.toward.is_method:
-                    var.toward = var.toward.copy()
-                    # if pointing method
-                    if len(self.args) == 0:
-                        var.is_method_delegate = True
-                        return var
-                    # else
-                    no_more_args, operands = self.call_method(var.toward, operands)
-                    if no_more_args:
-                        return var
-            # the others
-            for operand in operands:
-                # if not tuple or indices
-                if not (operand.is_indices or operand.is_view):
-                    operand = graph.indices(operand)
-                sub = operand.sub
-                if sub.is_required:
-                    operand.sub = var
-                    var = operand
-                    continue
-            return var
+            return graph.find(self.name)
+        # tuple
         elif self.data_type == self.TYPE_TUPLE:
-            # is method or builtins
-            if len(self.args) >= 1:
-                sub = self.args[0]
-                if sub.name in Exp.BUILTINS.keys():
-                    self.args = self.args[1:]
-                    sub.args = [self]
-                    var = sub.update_graph_recursive(graph)
-                    return var
-            operands = list()
-            for arg in self.args:
-                operand = arg.update_graph_recursive(graph)
-                operands.append(operand)
-            return graph.indices(*operands)
+            operands = self._get_operands(self.args, graph)
+            return graph.tuple(*operands)
+
+    @classmethod
+    def _get_operands(cls, args, graph):
+        operands = list()
+        for arg in args:
+            if arg is None:
+                operands.append(None)
+                continue
+            operand = arg.update_graph_recursive(graph)
+            operands.append(operand)
+        return operands
 
     def __repr__(self):
         return self.name + '{ ' + ', '.join([repr(data) for data in self.args]) + ' }'

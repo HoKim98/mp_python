@@ -1,4 +1,4 @@
-from mp.core.data import Builtins, Constant, Indexed, Method, Operator, Required, Variable, View
+from mp.core.data import Builtins, Constant, Indexed, Method, Operator, Required, Tuple, Variable, View
 from mp.core.error import RequiredError, SyntaxError
 from mp.core.expression import Expression as Exp
 
@@ -18,15 +18,14 @@ class Graph:
 
     # make new variable name
     def new_name(self):
-        name = '/%s' % self.window
+        name = '%s%s' % (Exp.CODE_CONST, self.window)
         self.window += 1
         return name
 
     # allocate new constant
     def alloc(self, num_type, toward, name=None):
         if name is None:
-            name = '/%s' % self.window
-            self.window += 1
+            name = self.new_name()
         var = Constant(name, num_type, toward)
         self.vars[name] = var
         return var
@@ -44,11 +43,14 @@ class Graph:
 
     # get or allocate variable
     def find(self, name):
+        # name is not defined
         if name in Exp.REQUIRED:
             return Required()
+        # this is a method
         if name in Exp.BUILTINS:
             return Builtins(name)
 
+        # find in graph
         if name in self.vars.keys():
             return self.vars[name]
         # find in file sometime
@@ -59,55 +61,17 @@ class Graph:
     # rename a variable
     def rename(self, name_from, name_to):
         old = self.vars[name_from]
-        # if old is required
-        # if old.toward is None:
-        #     raise RequiredError(name_from)
         old.name = name_to
         self.vars[name_to] = old
         del self.vars[name_from]
 
-    # call function or get indices
-    def call(self, name, *args):
-        sub = self.find(name)
-        if sub.is_variable:
-            return Indexed(sub, *args)
-        if sub.is_method:
-            sub.sub = name
-            sub.args = args
-            return sub
-        raise SyntaxError(name)
-
-    # call function or get indices
-    def define_method(self, name, method):
+    # point existing method
+    def point_method(self, name, toward, repeat=None):
         self.rename(name, self.new_name())
-        obj = Method(method.sub, *method.args)
-        sub = Method(name, obj)
-        obj.is_method_delegate = True
-        sub.is_method_delegate = True
-        obj.is_data = False
-        sub.is_data = False
+        sub = Method(name, toward, repeat=repeat)
         sub.name = name
         self.vars[name] = sub
         return sub
-
-    # (:, :, ...)
-    def indices(self, *args):
-        return Indexed(*args)
-
-    # {}
-    def view(self, *args):
-        return View(*args)
-
-    # :
-    def slice(self, sub, obj=None):
-        op = Exp.IDX[0]
-        if sub.is_operator:
-            if sub.op in Exp.IDX:
-                if sub.step is None:
-                    sub.step = obj
-                    return sub
-                raise SyntaxError(op)
-        return Operator(op, sub, obj)
 
     # save sometime
     def save(self, dir_from, *args, save=True):
@@ -120,12 +84,11 @@ class Graph:
                 raise SyntaxError(file.symbol)
             # copy data
             if dir_from is not None:
-                name = '%s.%s' % (dir_from, file.name)
+                name = '%s%s%s' % (dir_from, Exp.DOT, file.name)
                 self._inplace(self.find(name), file)
             else:
                 name = file.name
             self.ios[name] = save
-            # self.ios[name] = file.toward is not None
 
     # delete sometime
     def delete(self, dir_from, *args):
@@ -135,39 +98,79 @@ class Graph:
 
     # for in-place operators
     def _inplace(self, sub, obj):
+        # only variable, method, tuple in sub
         name = sub.name
-        # if pointing method
+        if not (sub.is_variable or sub.is_method or sub.is_operator):
+            raise SyntaxError(name)
+        # point method
         if obj.is_method_delegate:
-            self.define_method(name, obj)
+            # no tuple-delegate
+            if sub.is_tuple:
+                raise SyntaxError(Exp.IS[0])
+            # else
+            self.point_method(name, obj)
             return self.vars[name]
-        # else
-        if obj.has_attr(name):
-            sub = self.alloc_f(name, obj)
+        # var-tuple
+        if not sub.is_tuple and obj.is_tuple:
+            # only var-tuple
+            if sub.is_variable:
+                raise SyntaxError(Exp.IS[0])
+        # tuple-var
+        if sub.is_tuple and not obj.is_tuple:
+            # only tuple-var(tuple)
+            if obj.is_variable:
+                if obj.toward.is_tuple:
+                    obj = obj.toward
+                else:
+                    raise SyntaxError(Exp.IS[0])
+            else:
+                raise SyntaxError(Exp.IS[0])
+        # tuple-tuple
+        if sub.is_tuple and obj.is_tuple:
+            # only same dims
+            if len(sub.args) != len(obj.args):
+                raise SyntaxError(Exp.IS[0])
+            # in-place in order
+            for arg_sub, arg_obj in zip(sub.args, obj.args):
+                self._inplace(arg_sub, arg_obj)
             return sub
+        # else (tuple-var, var-var)
+        # rename if recursion
+        if sub.is_variable:
+            if obj.has_attr(name):
+                self.rename(name, self.new_name())
+                sub = self.alloc_f(name, obj)
+                return sub
+        # substitute
         sub.toward = obj
         return sub
 
     # for normal operators
     def operate(self, op, sub, obj=None, step=None):
+        # =
         if op in Exp.IS:
             return self._inplace(sub, obj)
-        if op in Exp.OIS:
+        # := (disposable substitute)
+        if op in Exp.DIS:
+            # don't use disposing while calculation
             if self.lock_point:
                 return self._inplace(sub, obj)
+            # else
             if sub.toward is None:
                 name = sub.name
                 if obj.has_attr(name):
-                    raise RequiredError(name)
+                    raise RequiredError(sub.symbol)
                 sub.toward = obj
                 sub.is_pointer = True
                 sub.is_pointer_orient = True
                 return sub
-                #return self.operate(Exp.IS[0], sub, obj, step)
             return sub
+        # in-place operators
         if op in Exp.Tokens_Inplace:
             tmp = self.alloc_p(sub.toward)
             tmp = Operator(op, tmp, obj, step)
             return self._inplace(sub, tmp)
+        # out-place operators
         tmp = self.alloc_p(sub)
         tmp = Operator(op, tmp, obj, step)
         return tmp
@@ -175,3 +178,24 @@ class Graph:
     # cleanup io requests
     def clean(self):
         self.ios = dict()
+
+    # (:, :, ...)
+    @classmethod
+    def indices(cls, *args):
+        return Indexed(*args)
+
+    # {}
+    @classmethod
+    def view(cls, *args):
+        return View(*args)
+
+    # tuple
+    @classmethod
+    def tuple(cls, *args):
+        return Tuple(*args)
+
+    # :
+    @classmethod
+    def slice(cls, start, stop, step):
+        op = Exp.IDX[0]
+        return Operator(op, start, stop, step)

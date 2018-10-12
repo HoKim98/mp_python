@@ -1,7 +1,7 @@
 class Expression:
 
     IS = ['=']
-    OIS = [':=']
+    DIS = [':=']
     IDX = [':']
 
     IADD = ['+=']
@@ -46,8 +46,6 @@ class Expression:
     SBC = [']']
 
     SHELL_RR = ['()']
-    SHELL_RS = ['(]']
-    SHELL_SR = ['[)']
     SHELL_SS = ['[]']
     SHELL_AA = ['{}']
 
@@ -68,12 +66,15 @@ class Expression:
     BACKSLASH = '\\'
     NEXTLINE = '\n'
 
+    BOOL = 'b'
     INT = 'i'
     FLOAT = 'f'
     INT_DEFAULT = 'i64'
     FLOAT_DEFAULT = 'f64'
 
     INDICES = '^'
+
+    CODE_CONST = '/'
 
     # DIR_CURRENT = 'now'
     # DIR_UP = 'up'
@@ -86,19 +87,21 @@ class Expression:
 
     Signs = RBO + RBC + ABO + ABC + SBO + SBC + ADD + SUB + MAT + MOD + [DOT, COMMA, COMMENT, BACKSLASH]
     Signs_DoubleSingle = ADD + SUB + MUL + TDIV + MAT + MOD + GT + LT + IS + IDX + EM
-    Signs_DoubleDouble = POW + FDIV + GE + LE + EQ + OIS + NEQ + IADD + ISUB + IMUL + ITDIV + IMAT + IMOD
+    Signs_DoubleDouble = POW + FDIV + GE + LE + EQ + DIS + NEQ + IADD + ISUB + IMUL + ITDIV + IMAT + IMOD
     Signs_DoubleTriple = IPOW + IFDIV
     Signs_All = Signs + Signs_DoubleSingle + Signs_DoubleDouble + Signs_DoubleTriple
+
+    Tokens_Operator = IS + DIS + IDX + IADD + ISUB + IMUL + ITDIV + IMAT + IMOD + IPOW + IFDIV + \
+                      EQ + NEQ + GT + GE + LT + LE + ADD + SUB + MAT + MUL + TDIV + MOD + FDIV + POW
 
     Tokens_Prefix = NEXT + FROM + SAVE + DELETE
     Tokens_Open = RBO + ABO + SBO
     Tokens_Close = RBC + ABC + SBC
-    Tokens_Range = SHELL_RR + SHELL_RS + SHELL_SR + SHELL_SS
-    Tokens_Shell = SHELL_RR + SHELL_RS + SHELL_SR + SHELL_SS + SHELL_AA
-    Tokens_Inplace = IADD + ISUB + IMUL + ITDIV + IMAT + IMOD + IPOW + IFDIV + IS + OIS
+    Tokens_Shell = SHELL_RR + SHELL_SS + SHELL_AA
+    Tokens_Inplace = IADD + ISUB + IMUL + ITDIV + IMAT + IMOD + IPOW + IFDIV + IS + DIS
 
     Tokens_Order = {
-            tuple(IS): 0, tuple(OIS): 0, tuple(IDX): 0,
+            tuple(IS): 0, tuple(DIS): 0, tuple(IDX): 0,
             tuple(IADD): 0, tuple(ISUB): 0, tuple(IMUL): 0, tuple(ITDIV): 0,
             tuple(IMAT): 0, tuple(IMOD): 0, tuple(IPOW): 0, tuple(IFDIV): 0,
             tuple(EQ): 1, tuple(NEQ): 1,
@@ -109,7 +112,7 @@ class Expression:
             tuple(POW): 6,
             (NUMBER,): 7, (VARIABLE,): 7, (TUPLE,): 7,
             tuple(RBO): 8, tuple(ABO): 8, tuple(SBO): 8,
-            tuple(SHELL_RR): 8, tuple(SHELL_RS): 8, tuple(SHELL_SR): 8, tuple(SHELL_SS): 8, tuple(SHELL_AA): 8,
+            tuple(SHELL_RR): 8, tuple(SHELL_SS): 8, tuple(SHELL_AA): 8,
     }
     Tokens_Order = {op: order for ops, order in Tokens_Order.items() for op in ops}
 
@@ -118,3 +121,9 @@ class Expression:
             tuple(IMAT): MAT[0], tuple(IMOD): MOD[0], tuple(IPOW): POW[0], tuple(IFDIV): FDIV[0],
     }
     Tokens_In2Out = {op: order for ops, order in Tokens_In2Out.items() for op in ops}
+
+    Tokens_Shell_Pair = {
+        tuple(RBO): tuple(RBC),
+        tuple(SBO): tuple(SBC),
+        tuple(ABO): tuple(ABC),
+    }

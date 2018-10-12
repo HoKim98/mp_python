@@ -73,6 +73,7 @@ class Plan:
     def _execute_variable_modify(self, var, toward):
         var.toward = self._execute_recursive(toward.toward)
         var.code = toward.encode()
+        var.is_data = toward.is_data
         return var
 
     def _execute_variable_point(self, var, toward):
@@ -99,7 +100,7 @@ class Plan:
         # unsupported type
         if toward.num_type not in self.ATTR.map_num_type.keys():
             raise SyntaxError(toward.num_type)
-        # create new numpy object
+        # create new array object
         value = self._new_const(toward)
         const = self.ATTR.AttrConst(toward.encode(), value)
         return const
@@ -112,65 +113,18 @@ class Plan:
         var.value = self._execute_recursive(toward.obj)
         return var
 
-    def _execute_operator_repeat_call(self, var, args, toward):
-        toward.is_method = True
-        toward.is_method_delegate = True
-        toward.is_data = False
-        obj = args.list[1]
-        var.repeat = obj
-        var.is_data = False
-        return var
-
     def _execute_operator(self, toward: data.Operator):
-        # =
+        # substitute
         if toward.op in Exp.IS:
             return self._execute_operator_modify(toward)
-        # * : if repeating calls
-        args = self.ATTR.AttrList([toward.sub, toward.obj, toward.step, *toward.args], self._execute_recursive)
-        sub = args.list[0]
-        if sub.toward is not None:
-            if sub.toward.is_method:
-                if toward.op in Exp.MUL:
-                    return self._execute_operator_repeat_call(sub, args, toward)
         # the others
+        args = self.ATTR.AttrList([toward.sub, toward.obj, toward.step, *toward.args], self._execute_recursive)
         op = self.ATTR.AttrOP(toward.op, args)
         return op
 
-    def _execute_indexed_delegate(self, args, toward):
-        method = toward.sub
-        while len(method.args) >= 1:
-            method = method.args[0]
-        var = method.sub
-        if var in Exp.BUILTINS:
-            external_method = Exp.BUILTINS[var]
-        else:
-            raise NotImplementedError
-        method = self.ATTR.AttrMethod(var, external_method, toward, args)
-        return method
-
-    def _execute_indexed_delegate_repeat(self, args, repeat, toward):
-        method = toward.sub.toward
-        while len(method.args) >= 1:
-            method = method.args[0]
-        var = method.sub.toward.sub
-        if var in Exp.BUILTINS:
-            external_method = Exp.BUILTINS[var]
-        else:
-            raise NotImplementedError
-        method = self.ATTR.AttrMethod(var, external_method, toward, args, repeat=repeat)
-        return method
-
     def _execute_indexed(self, toward: data.Indexed):
-        # if pointing method
-        args = self.ATTR.AttrList(toward.args, self._execute_recursive)
-        if toward.sub.is_method_delegate:
-            return self._execute_indexed_delegate(args, toward)
-        # if pointing repeating method
         sub = self._execute_recursive(toward.sub)
-        if toward.sub.toward is not None:
-            if toward.sub.toward.is_method_delegate:
-                return self._execute_indexed_delegate_repeat(args, sub.toward.repeat, toward)
-        # else
+        args = self.ATTR.AttrList(toward.args, self._execute_recursive)
         op = self.ATTR.AttrIndexed(sub, args)
         return op
 
@@ -180,41 +134,46 @@ class Plan:
         op = self.ATTR.AttrView(sub, args)
         return op
 
-    def _execute_method_delegate(self, var, args, toward):
-        toward.is_data = False
-        # if recursive pointing
-        if len(args) >= 1:
-            arg = args.list[0]
-            if arg.is_method:
-                if arg.args is None:
-                    arg.toward = toward
-                    arg.code = toward.encode()
-                    return arg
-        external_method = Exp.BUILTINS[var]
-        method = self.ATTR.AttrMethod(var, external_method, toward, None)
-        return method
+    def _execute_method_fix(self, toward):
+        if toward is not None:
+            return self._execute_recursive(toward)
+        return None
 
-    def _execute_method_external_method(self, var, args, toward):
-        external_method = Exp.BUILTINS[var]
-        method = self.ATTR.AttrMethod(var, external_method, toward, args)
-        return method
+    def _execute_method_update_repeat(self, repeat_old, repeat_new):
+        if repeat_old is None:
+            return repeat_new
+        if repeat_new is None:
+            return repeat_old
+        # multiply repeat numbers
+        args = self.ATTR.AttrList([repeat_old, repeat_new])
+        return self.ATTR.AttrOP(Exp.MUL[0], args)
+
+    def _execute_method_delegate(self, toward):
+        toward_origin = toward
+        repeat = self._execute_method_fix(toward.repeat)
+        while toward.toward is not None:
+            toward = toward.toward
+            repeat_new = self._execute_method_fix(toward.repeat)
+            repeat = self._execute_method_update_repeat(repeat, repeat_new)
+        # if builtins  TODO or else
+        if toward.is_builtins:
+            method = Exp.BUILTINS[toward.name]
+            return self.ATTR.AttrMethod(toward_origin.name, method, toward_origin, None, repeat)
+        raise NotImplementedError
 
     def _execute_method(self, toward: data.Method):
-        sub = toward.sub
-        args = self.ATTR.AttrList(toward.args, self._execute_recursive)
-        # if pointing method
+        # point method
         if toward.is_method_delegate:
-            return self._execute_method_delegate(sub, args, toward)
-        # else
-        # external methods
-        if sub in Exp.BUILTINS:
-            return self._execute_method_external_method(sub, args, toward)
-        # user-defined methods
-        raise NotImplementedError
+            return self._execute_method_delegate(toward)
+        # call method
+        args = self.ATTR.AttrList(toward.args, self._execute_recursive)
+        method = self._execute_method_delegate(toward)
+        method.args = args
+        return method
 
     # find variable from file-system
     def _find_variable(self, toward):
-        name = toward.name
+        name = toward.symbol
         # if not variable
         if name is None:
             raise RequiredError('None')
