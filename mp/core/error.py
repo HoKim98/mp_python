@@ -1,6 +1,6 @@
 class BaseError(Exception):
     def __init__(self, error_code: int, message: str):
-        self.message = 'Error(%d) : %s' % (error_code, message)
+        self.message = 'Error(%s) : %s' % (hex(error_code), message)
         super().__init__(self.message)
         self.error_code = error_code
         self.message_why = message

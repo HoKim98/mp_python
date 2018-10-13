@@ -155,7 +155,7 @@ class Plan:
             toward = toward.toward
             repeat_new = self._execute_method_fix(toward.repeat)
             repeat = self._execute_method_update_repeat(repeat, repeat_new)
-        # if builtins  TODO or else
+        # if builtins  TODO or else 함수 파일 만들기
         if toward.is_builtins:
             method = Exp.BUILTINS[toward.name]
             return self.ATTR.AttrMethod(toward_origin.name, method, toward_origin, None, repeat)

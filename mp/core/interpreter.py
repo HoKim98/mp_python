@@ -227,8 +227,8 @@ class Interpreter:
             msg = f.read()
             self(msg)
 
-    def begin_interactive(self):
-        _interactive(self)
+    def begin_interactive(self, debug=False):
+        _interactive(self, debug=debug)
 
     def __call__(self, message: str, lazy_execute: bool = True):
         for data in self.code_to_data(message):
@@ -358,7 +358,7 @@ class Interpreter:
                             prefixes.append(query)
                         prefixes.append(w)
                         prefixes.tokenize()
-                        query = TokenTree(None, Exp.VARIABLE)
+                        query = TokenTree(None, Exp.SHELL_RR[0])
                         object_attr = query
                         continue
                 # from- prefix
@@ -628,6 +628,14 @@ class Interpreter:
                 continue
             if query.data_type == Token.TYPE_VARIABLE:
                 return func(prefix_from, query)
+            if query.data_type == Token.TYPE_TUPLE:
+                args = list()
+                while len(query.args) == 2:
+                    args.append(query.args[1])
+                    query = query.args[0]
+                args.append(query.args[0])
+                args.reverse()
+                return func(prefix_from, *args)
             else:
                 raise error.SyntaxError(op)
         # (iterate) values
