@@ -45,6 +45,11 @@ class Variable:
             setattr(new_var, key, value)
         return new_var
 
+    def replace(self, name: str):
+        if self.name == name:
+            return self.toward
+        return self
+
     @property
     def is_none(self):
         return (self.name is not None) and (self.toward is None)
@@ -153,6 +158,16 @@ class Operator(Variable):
                     return True
         return False
 
+    def replace(self, name: str):
+        if self.sub is not None:
+            self.sub = self.sub.replace(name)
+        if self.obj is not None:
+            self.obj = self.obj.replace(name)
+        if self.step is not None:
+            self.step = self.step.replace(name)
+        self.args = [arg.replace(name) for arg in self.args]
+        return self
+
     @property
     def symbol(self):
         return self.name
@@ -244,6 +259,12 @@ class Method(Variable):
                     return True
         return False
 
+    def replace(self, name: str):
+        if self.is_method_delegate:
+            return super().replace(name)
+        self.args = [arg.replace(name) for arg in self.args]
+        return self
+
     def get_real_method(self):
         if self.args is None and self.toward is None:
             return self.name
@@ -264,7 +285,8 @@ class Method(Variable):
             # has point
             if self.toward is not None:
                 toward = self._encode(self.toward, stack_called)
-                name = '%s%s%s' % (name, Exp.IS[0], toward)
+                # name = '%s%s%s' % (name, Exp.IS[0], toward)
+                name = '%s' % toward
         # has repeat
         if self.repeat is not None:
             repeat = self._encode(self.repeat, stack_called)

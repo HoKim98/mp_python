@@ -63,6 +63,10 @@ class Graph:
     # rename a variable
     def rename(self, name_from, name_to):
         old = self.vars[name_from]
+        # useless
+        if old.is_required:
+            self.gc(old)
+            return
         old.name = name_to
         self.vars[name_to] = old
         del self.vars[name_from]
@@ -107,11 +111,13 @@ class Graph:
         if var is None:
             return True
         name = var.name
+        print(type(var))
         if name is None:
             return True
         # is constant
         if var.is_constant:
-            del self.vars[name]
+            if name in self.vars.keys():
+                del self.vars[name]
             del var
             return True
         # is operator
@@ -119,9 +125,9 @@ class Graph:
             items = [var.sub, var.obj, var.step]
             items += var.args
             # test removing
-            is_removed = True
+            is_removed = False
             for item in items:
-                is_removed = is_removed and self.gc(item)
+                is_removed = self.gc(item) or is_removed
             if is_removed:
                 del var
             return is_removed
@@ -166,11 +172,19 @@ class Graph:
                     break
             # useless
             if not use_item:
+                # remove args if method
+                for arg in var.args:
+                    self.gc(arg)
                 del self.vars[name]
                 self.gc(var.toward)
                 del var
                 return True
-        raise NotImplementedError
+        # else
+        # remove args if method
+        for arg in var.args:
+            self.gc(arg)
+        del var
+        return True
 
     # for in-place operators
     def _inplace(self, sub, obj):
@@ -181,7 +195,7 @@ class Graph:
         # point method
         if obj.is_method_delegate:
             # no tuple-delegate
-            if not sub.is_tuple:
+            if sub.is_tuple:
                 raise SyntaxError(Exp.IS[0])
             # else
             self.point_method(name, obj)
@@ -224,8 +238,9 @@ class Graph:
                 if old.is_required:
                     raise RequiredError(name)
                 # else
-                self.rename(name, self.new_name())
-                sub = self.alloc_f(name, obj)
+                # replace sub with sub.toward
+                obj = obj.replace(name)
+                sub.toward = obj
                 return sub
         # substitute
         # remove previous
