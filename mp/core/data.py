@@ -12,7 +12,7 @@ class Variable:
         self.sub = None
         self.obj = None
         self.step = None
-        self.args = None
+        self.args = []
 
         self.is_pointer = False
         self.is_pointer_orient = False
@@ -115,7 +115,7 @@ class Constant(Variable):
         self.value = value
 
     def has_attr(self, name: str):
-        return False
+        return self.name == name
 
     @property
     def symbol(self):
@@ -144,10 +144,9 @@ class Operator(Variable):
         self.sub = sub
         self.obj = obj
         self.step = step
-        self.args = []
 
     def has_attr(self, name: str):
-        args = [self.sub, self.obj, self.step, *self.args]
+        args = [self.sub, self.obj, self.step]
         for arg in args:
             if arg is not None:
                 if arg.has_attr(name):

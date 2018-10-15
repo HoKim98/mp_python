@@ -23,16 +23,14 @@ class Plan:
         self.graph.lock_point = True
         try:
             for var_name, append in self.graph.ios.items():
-                var = self.graph.vars[var_name]
                 # save
                 if append:
+                    var = self.graph.vars[var_name]
                     value = self._execute_recursive(var)
                     value.get_value()
                 # delete
                 else:
                     value = None
-                    var.code = None
-                    var.toward = None
                 self.io.set(var_name, value)
         # if error : finish
         except BaseError as e:

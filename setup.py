@@ -5,7 +5,7 @@ except ModuleNotFoundError:
     import_ok = False
 
 from setuptools import find_packages, setup
-from mp.version import __doc__, __version__
+import mp
 
 
 # Read in the README for the long description on PyPI
@@ -26,8 +26,8 @@ def get_requirements():
 
 
 setup(name='mp',
-      version=__version__,
-      description=__doc__,
+      version=mp.__version__,
+      description=mp.__doc__,
       long_description=long_description(),
       url='https://github.com/kerryeon/mp',
       author='kerryeon',

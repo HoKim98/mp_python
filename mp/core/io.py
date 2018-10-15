@@ -9,7 +9,7 @@ class IO:
     def __init__(self, dir_main: str, permission: int = 0o775):
         if len(dir_main) == 0:
             dir_main = os.path.curdir
-        self.dir_main = '%s/%s' % (os.path.curdir, dir_main)
+        self.dir_main = dir_main
         self.permission = permission
 
     def get(self, item: str):

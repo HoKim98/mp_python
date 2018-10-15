@@ -341,8 +341,16 @@ class Interpreter:
                         break
                     # new tuple
                     if last_object is None:
-                        query = object_attr = object_attr.insert_root(Exp.SHELL_RR[0])
-                        object_attr.has_subject = False
+                        # variable -> tuple
+                        if object_attr.head == Exp.VARIABLE:
+                            object_attr.head = Exp.SHELL_RR[0]
+                            break
+                        # =
+                        if object_attr.head in Exp.IS:
+                            object_attr = object_attr.insert_upper(Exp.SHELL_RR[0])
+                            break
+                        # is tuple
+                        object_attr.breakpoint = object_attr.pointer
                         break
                     # else : goto upper
                     object_attr = last_object
@@ -629,13 +637,7 @@ class Interpreter:
             if query.data_type == Token.TYPE_VARIABLE:
                 return func(prefix_from, query)
             if query.data_type == Token.TYPE_TUPLE:
-                args = list()
-                while len(query.args) == 2:
-                    args.append(query.args[1])
-                    query = query.args[0]
-                args.append(query.args[0])
-                args.reverse()
-                return func(prefix_from, *args)
+                return func(prefix_from, *query.args)
             else:
                 raise error.SyntaxError(op)
         # (iterate) values

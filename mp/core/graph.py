@@ -32,6 +32,8 @@ class Graph:
 
     # allocate new variable by force
     def alloc_f(self, name, toward):
+        if name in self.vars.keys():
+            self.gc(self.vars[name])
         var = Variable(name, toward)
         self.vars[name] = var
         return var
@@ -88,13 +90,85 @@ class Graph:
                 self._inplace(self.find(name), file)
             else:
                 name = file.name
+            # remove vars
+            if not save:
+                old = file.toward
+                file.toward = None
+                self.gc(file)
+                self.gc(old)
             self.ios[name] = save
 
     # delete sometime
     def delete(self, dir_from, *args):
-        for file in args:
-            file.toward = None
         self.save(dir_from, *args, save=False)
+
+    # choose whether remove
+    def gc(self, var):
+        if var is None:
+            return True
+        name = var.name
+        if name is None:
+            return True
+        # is constant
+        if var.is_constant:
+            return False
+        # is operator
+        if var.is_operator:
+            items = [var.sub, var.obj, var.step]
+            items += var.args
+            # test removing
+            is_removed = True
+            for item in items:
+                is_removed = is_removed and self.gc(item)
+            if is_removed:
+                del var
+            return is_removed
+        # is variable
+        if var.is_variable:
+            # already removed
+            if name not in self.vars.keys():
+                return True
+            # is actually constant
+            if name.startswith('/'):
+                old = var.toward
+                var.toward = None
+                self.gc(old)
+                del self.vars[name]
+                del var
+                return True
+            # else
+            if var.toward is None:
+                # find using
+                use_item = False
+                for var_name, item in self.vars.items():
+                    if var_name == name:
+                        continue
+                    if item.has_attr(name):
+                        use_item = True
+                        break
+                # useless
+                if not use_item:
+                    del self.vars[name]
+                    del var
+                    return True
+            return False
+        # else
+        # find using
+        if name in self.vars.keys():
+            use_item = False
+            for var_name, item in self.vars.items():
+                if var_name == name:
+                    continue
+                if item.has_attr(name):
+                    use_item = True
+                    break
+            # useless
+            if not use_item:
+                del self.vars[name]
+                self.gc(var.toward)
+                del var
+                return True
+        raise NotImplementedError
 
     # for in-place operators
     def _inplace(self, sub, obj):
@@ -105,7 +179,7 @@ class Graph:
         # point method
         if obj.is_method_delegate:
             # no tuple-delegate
-            if sub.is_tuple:
+            if not sub.is_tuple:
                 raise SyntaxError(Exp.IS[0])
             # else
             self.point_method(name, obj)
@@ -113,14 +187,19 @@ class Graph:
         # var-tuple
         if not sub.is_tuple and obj.is_tuple:
             # only var-tuple
-            if sub.is_variable:
+            if not sub.is_variable:
                 raise SyntaxError(Exp.IS[0])
+            # substitute
+            old = sub.toward
+            sub.toward = obj
+            self.gc(old)
+            return sub
         # tuple-var
         if sub.is_tuple and not obj.is_tuple:
             # only tuple-var(tuple)
             if obj.is_variable:
                 if obj.toward.is_tuple:
-                    obj = obj.toward
+                    return self._inplace(sub, obj.toward)
                 else:
                     raise SyntaxError(Exp.IS[0])
             else:
@@ -138,11 +217,19 @@ class Graph:
         # rename if recursion
         if sub.is_variable:
             if obj.has_attr(name):
+                # check target is pointer
+                old = self.vars[name]
+                if old.is_required:
+                    raise RequiredError(name)
+                # else
                 self.rename(name, self.new_name())
                 sub = self.alloc_f(name, obj)
                 return sub
         # substitute
+        # remove previous
+        old = sub.toward
         sub.toward = obj
+        self.gc(old)
         return sub
 
     # for normal operators
@@ -167,12 +254,12 @@ class Graph:
             return sub
         # in-place operators
         if op in Exp.Tokens_Inplace:
-            tmp = self.alloc_p(sub.toward)
-            tmp = Operator(op, tmp, obj, step)
+            if sub.toward is None:
+                raise RequiredError(sub.name)
+            tmp = Operator(op, sub.toward, obj, step)
             return self._inplace(sub, tmp)
         # out-place operators
-        tmp = self.alloc_p(sub)
-        tmp = Operator(op, tmp, obj, step)
+        tmp = Operator(op, sub, obj, step)
         return tmp
 
     # cleanup io requests
