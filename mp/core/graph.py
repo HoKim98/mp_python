@@ -111,7 +111,9 @@ class Graph:
             return True
         # is constant
         if var.is_constant:
-            return False
+            del self.vars[name]
+            del var
+            return True
         # is operator
         if var.is_operator:
             items = [var.sub, var.obj, var.step]
@@ -243,14 +245,18 @@ class Graph:
             if self.lock_point:
                 return self._inplace(sub, obj)
             # else
+            sub.is_pointer = True
+            sub.is_pointer_orient = True
+            # can substitute
             if sub.toward is None:
                 name = sub.name
                 if obj.has_attr(name):
                     raise RequiredError(sub.symbol)
                 sub.toward = obj
-                sub.is_pointer = True
-                sub.is_pointer_orient = True
                 return sub
+            # else
+            # remove obj
+            self.gc(obj)
             return sub
         # in-place operators
         if op in Exp.Tokens_Inplace:
