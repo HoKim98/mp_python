@@ -111,7 +111,6 @@ class Graph:
         if var is None:
             return True
         name = var.name
-        print(type(var))
         if name is None:
             return True
         # is constant
@@ -132,7 +131,7 @@ class Graph:
                 del var
             return is_removed
         # is variable
-        if var.is_variable:
+        if var.is_variable:  # TODO is_method_delegate
             # already removed
             if name not in self.vars.keys():
                 return True
@@ -177,10 +176,12 @@ class Graph:
                     self.gc(arg)
                 del self.vars[name]
                 self.gc(var.toward)
+                self.gc(var.repeat)
                 del var
                 return True
         # else
         # remove args if method
+        self.gc(var.repeat)
         for arg in var.args:
             self.gc(arg)
         del var
@@ -251,6 +252,15 @@ class Graph:
 
     # for normal operators
     def operate(self, op, sub, obj=None, step=None):
+        # remove delegate
+        if sub.is_method_delegate:
+            if sub.name in self.vars.keys():
+                del self.vars[sub.name]
+            toward = sub.toward
+            sub.toward = None
+            self.gc(toward)
+            self.gc(sub)
+            sub = self.find(sub.name)
         # =
         if op in Exp.IS:
             return self._inplace(sub, obj)
