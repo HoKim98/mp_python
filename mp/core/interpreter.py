@@ -200,7 +200,7 @@ class TokenTree(list):
 class Interpreter:
 
     def __init__(self, dir_process: str = './', plan=None):
-        self.dir_process = os.path.join(dir_process)
+        self.dir_process = os.path.abspath(os.path.join(dir_process))
         plan = Plan if plan is None else plan
         self.plan = plan(dir_process, self.code_to_data)
         self._init_builtin_methods(Plan)
@@ -347,7 +347,10 @@ class Interpreter:
                             break
                         # =
                         if object_attr.head in Exp.IS:
-                            object_attr = object_attr.insert_upper(Exp.SHELL_RR[0])
+                            if object_attr[-1].head not in Exp.SHELL_RR:
+                                object_attr = object_attr.insert_upper(Exp.SHELL_RR[0])
+                            else:
+                                object_attr = object_attr[-1]
                             break
                         # is tuple
                         object_attr.breakpoint = object_attr.pointer

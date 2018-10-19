@@ -33,7 +33,7 @@ class _Interactive(cmd.Cmd):
     def __init__(self, interpreter, debug: bool):
         super().__init__()
         self.debug = debug
-        self.dir_process = os.path.abspath(interpreter.dir_process)
+        self.dir_process = interpreter.dir_process
         self.interpreter = interpreter
         self._set_intro()
         self._set_prompt()

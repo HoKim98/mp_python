@@ -48,6 +48,7 @@ class Variable:
     def replace(self, name: str):
         if self.name == name:
             return self.toward
+        self.toward = self._replace(self.toward, name)
         return self
 
     @property
@@ -97,6 +98,12 @@ class Variable:
             stack_called = list()
         return stack_called
 
+    @staticmethod
+    def _replace(self, name: str):
+        if self is None:
+            return None
+        return self.replace(name)
+
     def _name_is_constant(self):
         if self.name is None:
             return True
@@ -121,6 +128,9 @@ class Constant(Variable):
 
     def has_attr(self, name: str):
         return self.name == name
+
+    def replace(self, name: str):
+        return self
 
     @property
     def symbol(self):
@@ -159,13 +169,10 @@ class Operator(Variable):
         return False
 
     def replace(self, name: str):
-        if self.sub is not None:
-            self.sub = self.sub.replace(name)
-        if self.obj is not None:
-            self.obj = self.obj.replace(name)
-        if self.step is not None:
-            self.step = self.step.replace(name)
-        self.args = [arg.replace(name) for arg in self.args]
+        self.sub = self._replace(self.sub, name)
+        self.obj = self._replace(self.obj, name)
+        self.step = self._replace(self.step, name)
+        self.args = [self._replace(arg, name) for arg in self.args]
         return self
 
     @property
@@ -260,10 +267,10 @@ class Method(Variable):
         return False
 
     def replace(self, name: str):
-        if self.is_method_delegate:
-            return super().replace(name)
-        self.args = [arg.replace(name) for arg in self.args]
-        return self
+        sub = super().replace(name)
+        if not self.is_method_delegate:
+            sub.args = [self._replace(arg, name) for arg in sub.args]
+        return sub
 
     def get_real_method(self):
         if self.args is None and self.toward is None:

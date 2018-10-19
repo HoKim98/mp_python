@@ -131,9 +131,9 @@ class Graph:
                 del var
             return is_removed
         # is variable
-        if var.is_variable:  # TODO is_method_delegate
+        if var.is_variable or var.is_method_delegate:
             # already removed
-            if name not in self.vars.keys():
+            if name not in self.vars.keys() and var.is_variable:
                 return True
             # is actually constant
             if name.startswith('/'):
@@ -155,7 +155,15 @@ class Graph:
                         break
                 # useless
                 if not use_item:
-                    del self.vars[name]
+                    # remove delegate
+                    old = var.repeat
+                    var.repeat = None
+                    self.gc(old)
+                    for arg in var.args:
+                        self.gc(arg)
+                    # with variable
+                    if name in self.vars.keys():
+                        del self.vars[name]
                     del var
                     return True
             return False
@@ -180,10 +188,6 @@ class Graph:
                 del var
                 return True
         # else
-        # remove args if method
-        self.gc(var.repeat)
-        for arg in var.args:
-            self.gc(arg)
         del var
         return True
 
