@@ -1,7 +1,7 @@
 from mp.core import attribute as _attribute
 from mp.core import builtins as _builtins
 from mp.core import data
-from mp.core.error import BaseError, RequiredError
+from mp.core.error import BaseError, RequiredError, TooMuchOrLessArguments
 from mp.core.expression import Expression as Exp
 from mp.core.graph import Graph
 from mp.core.io import IO
@@ -66,6 +66,9 @@ class Plan:
         # is method
         if type(toward) is data.Method:
             return self._execute_method(toward)
+        # is user-defined method
+        if type(toward) is data.UserDefinedMethod:
+            raise RequiredError(toward.name)
         raise NotImplementedError
 
     def _execute_variable_modify(self, var, toward):
@@ -149,15 +152,19 @@ class Plan:
     def _execute_method_delegate(self, toward):
         toward_origin = toward
         repeat = self._execute_method_fix(toward.repeat)
-        while toward.toward is not None:
+        while toward.toward is not None and not toward.is_method_defined:
             toward = toward.toward
             repeat_new = self._execute_method_fix(toward.repeat)
             repeat = self._execute_method_update_repeat(repeat, repeat_new)
-        # if builtins  TODO or else 함수 파일 만들기
+        # if builtins
         if toward.is_builtins:
             method = Exp.BUILTINS[toward.name]
             return self.ATTR.AttrMethod(toward_origin.name, method, toward_origin, None, repeat)
-        raise NotImplementedError
+        # if user-defined methods
+        if toward.is_method_defined:
+            return self._execute_method_defined(toward, toward_origin.name, toward_origin.args)
+        # undefined error
+        raise RequiredError(toward.name)
 
     def _execute_method(self, toward: data.Method):
         # point method
@@ -167,6 +174,18 @@ class Plan:
         args = self.ATTR.AttrList(toward.args, self._execute_recursive)
         method = self._execute_method_delegate(toward)
         method.args = args
+        return method
+
+    def _execute_method_defined(self, toward: data.UserDefinedMethod, name, args):
+        # check sizeof args
+        if len(toward.args) != len(args):
+            raise TooMuchOrLessArguments(name, len(toward.args), len(args))
+        # call method
+        toward = toward.copy()
+        for arg_from, arg_to in zip(args, toward.args):
+            arg_to.toward = arg_from  # TODO a = foo(..., a) 꼴인지 확인할 것!
+        method = self._execute_recursive(toward.toward)
+        method.code = toward.toward.encode()
         return method
 
     # find variable from file-system

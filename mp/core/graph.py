@@ -1,4 +1,4 @@
-from mp.core.data import Builtins, Constant, Indexed, Method, Operator, Required, Tuple, Variable, View
+from mp.core.data import *
 from mp.core.error import RequiredError, SyntaxError
 from mp.core.expression import Expression as Exp
 
@@ -51,6 +51,9 @@ class Graph:
         # this is a method
         if name in Exp.BUILTINS:
             return Builtins(name)
+        # this is user-defined method
+        if name in Exp.METHOD:
+            return UserDefinedMethod(name)
 
         # find in graph
         if name in self.vars.keys():
@@ -62,6 +65,9 @@ class Graph:
 
     # rename a variable
     def rename(self, name_from, name_to):
+        # not exists
+        if name_from not in self.vars.keys():
+            return
         old = self.vars[name_from]
         # useless
         if old.is_required:
@@ -73,6 +79,11 @@ class Graph:
 
     # point existing method
     def point_method(self, name, toward, repeat=None):
+        # no user-defined method pointer
+        if toward.is_method_defined:
+            # if just declaring
+            if toward.toward is None:
+                raise RequiredError(toward.name)
         self.rename(name, self.new_name())
         sub = Method(name, toward, repeat=repeat)
         sub.name = name
@@ -91,7 +102,7 @@ class Graph:
             # copy data
             if dir_from is not None:
                 name = '%s%s%s' % (dir_from, Exp.DOT, file.name)
-                self._inplace(self.find(name), file)
+                self.rename(file.name, name)
             else:
                 name = file.name
             # remove vars
@@ -131,7 +142,7 @@ class Graph:
                 del var
             return is_removed
         # is variable
-        if var.is_variable or var.is_method_delegate:
+        if var.is_variable or var.is_method_delegate:  # TODO user-defined methods 의 gc 메소드 구현
             # already removed
             if name not in self.vars.keys() and var.is_variable:
                 return True
@@ -190,6 +201,11 @@ class Graph:
         # else
         del var
         return True
+
+    # detach from graph
+    def detach(self, name):
+        if name in self.vars.keys():
+            self.vars[name] = self.vars[name].copy()
 
     # for in-place operators
     def _inplace(self, sub, obj):

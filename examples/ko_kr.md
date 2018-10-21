@@ -16,6 +16,9 @@
 5. [GUI 프로그래밍](#ch5)
     - [실시간으로 그래프 확인하기 (Test)](#ch5-1)
     - [그래프 제어하기](#ch5-2)
+6. [SSH를 통한 원격 인터프리터 실행](#ch6)
+    - [원격 인터프리터 실행](#ch6-1)
+    - [Anaconda와 같은 가상 환경에서 실행하기](#ch6-2)
 
 <a name="ch1"></a>
 ## 1. 수식 표현
@@ -163,7 +166,16 @@ aaa = 7
 ```
 <a name="ch3-2"></a>
 ### 함수 구현하기
-* 함수를 직접 구현하는 부분은 현재 미구현 상태입니다.
+연관 파일 : `ch3/def.mp`\
+`def` 메소드를 이용하여 함수(매크로)를 구현할 수 있습니다.
+```
+@ foo = def(x, y, x + y)
+@ aaa = foo(3, 4)
+@ _ = print(aaa)
+@ save _
+
+aaa = 7
+```
 
 <a name="ch4"></a>
 ## 4. 긴 문자열 변수
@@ -213,8 +225,47 @@ mycat'syear = 2.9
 누구나 쉽고 간편하게 제어할 수 있도록 도와줄 것입니다.
 * 본 기능은 실험중입니다.
 
-![A Image describing `MPCAD`](https://github.com/kerryeon/mp/tree/master/examples/ch5/mpcad.png)
+![A Image describing `MPCAD`](ch5/mpcad.png)
 
 <a name="ch5-2"></a>
 ### 그래프 제어하기
 * 그래프를 커서를 이용하여 제어하는 부분은 현재 미구현 상태입니다.
+
+<a name="ch6"></a>
+## 6. SSH를 통한 원격 인터프리터 실행
+<a name="ch6-1"></a>
+### 원격 인터프리터 실행
+`MP`는 쉘처럼 간편하게 사용하도록 설계되었습니다.
+때문에 `SSH`를 이용하여 클라이언트가 서버에서 `MP`를 간편히 실행할 수 있습니다.
+더 나아가, 일반적인 쉘처럼 사용할 수 있을 뿐만 아니라,
+`RemoteInterpreter` 클래스를 이용하여 파이썬 응용 프로그램을 작성할 수 있습니다.
+* 원하는 디렉토리에서 작업을 시작하는 부분은 현재 미구현 상태입니다.
+#### 쉘을 통한 실행
+```bash
+python -m mp.remote [hostname] [user] [-p port] [-d dir_process] [-i interpreter]
+Password: [password]
+```
+#### 파이썬을 통한 실행
+```python
+from mp import RemoteInterpreter
+
+sess = RemoteInterpreter()
+sess.connect('[hostname]', '[user]', '[password]', port)
+sess.session()
+sess.begin_interactive()
+```
+
+<a name="ch6-2"></a>
+### Anaconda와 같은 가상 환경에서 실행하기
+`Python`은 모듈의 의존성이 중요한 프로그래밍 언어입니다.
+때문에 모듈 관리에 집중한 다양한 프로그램들이 있습니다.
+대표적으로 `Anaconda`가 있는데, 이들 환경에서 `python`을 실행하기 위해선 조금의 과정이 추가됩니다.
+`MP`는 `python` 인터프리터를 직접 지정할 수 있게 하여 문제를 해결하려 합니다.
+```python
+from mp import RemoteInterpreter
+
+sess = RemoteInterpreter()
+sess.connect('[hostname]', '[user]', '[password]', port)
+sess.session('[interpreter path]')
+sess.begin_interactive()
+```

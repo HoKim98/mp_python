@@ -54,6 +54,7 @@ class Expression:
     SAVE = ['save']
     DELETE = ['del']
 
+    METHOD = ['def']
     REQUIRED = ['required']
 
     INDENT = [' ', '\t', ]
@@ -75,6 +76,7 @@ class Expression:
     INDICES = '^'
 
     CODE_CONST = '/'
+    CODE_METHOD = '$'
 
     # DIR_CURRENT = 'now'
     # DIR_UP = 'up'

@@ -275,6 +275,10 @@ class AttrDict:
         self.dict = dict()
 
     def __getitem__(self, name) -> Attr:
+        # if method's args
+        if name.startswith('$'):
+            return self._new_attr(name)
+        # create new attr if not exists
         if name not in self.dict.keys():
             self.dict[name] = self._new_attr(name)
         return self.dict[name]

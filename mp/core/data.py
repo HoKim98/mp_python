@@ -23,6 +23,7 @@ class Variable:
         self.is_tuple = False
         self.is_method = False
         self.is_method_delegate = False
+        self.is_method_defined = False
 
         self.is_builtins = False
         # callable or constant
@@ -80,8 +81,11 @@ class Variable:
         name = self.name
         # if already defined
         if name in stack_called:
-            return '%s' % name
-        stack_called.append(name)
+            return name
+        stack_called.add(name)
+        # if required
+        if toward is None:
+            return name
         # = :=
         op = Exp.DIS[0] if self.is_pointer_orient else Exp.IS[0]
         return '%s%s%s%s%s' % (Exp.RBO[0], name, op, toward, Exp.RBC[0])
@@ -95,7 +99,7 @@ class Variable:
     @staticmethod
     def _ensure_stack_not_none(stack_called):
         if stack_called is None:
-            stack_called = list()
+            stack_called = set()
         return stack_called
 
     @staticmethod
@@ -288,12 +292,15 @@ class Method(Variable):
         name = self.name
         # not defined yet
         if name not in stack_called:
-            stack_called.append(name)
+            stack_called.add(name)
             # has point
             if self.toward is not None:
                 toward = self._encode(self.toward, stack_called)
                 # name = '%s%s%s' % (name, Exp.IS[0], toward)
                 name = '%s' % toward
+                # is user-defined method
+                if self.toward.is_method_defined:
+                    name = '%s%s%s' % (self.name, Exp.IS[0], name)
         # has repeat
         if self.repeat is not None:
             repeat = self._encode(self.repeat, stack_called)
@@ -315,6 +322,22 @@ class Method(Variable):
         if name == self.name:
             return name
         return '%s%s%s' % (Exp.RBO[0], name, Exp.RBC[0])
+
+
+class UserDefinedMethod(Method):
+
+    def __init__(self, name=None):
+        super().__init__(name)
+        self.is_method_defined = True
+
+    def encode(self, stack_called=None):
+        stack_called = self._ensure_stack_not_none(stack_called)
+        name = self.name
+        args = [arg.name for arg in self.args]
+        stack_called = stack_called.union(set(args))
+        args += [self._encode(self.toward, stack_called)]
+        name = '%s%s%s%s' % (name, Exp.RBO[0], ','.join(args), Exp.RBC[0])
+        return name
 
 
 def Builtins(method: str):

@@ -39,7 +39,7 @@ class RemoteInterpreter:
     def session(self, python: str = 'python'):
         self.session = self.ssh.get_transport().open_session()
         self.session.get_pty()
-        self.session.exec_command('cd ~/mp; %s -m mp.console' % python)
+        self.session.exec_command('cd ~/mp; %s -m mp.console' % python)  # TODO
         # self.session.exec_command('%s -m mp.console --dir-process %s' % (python, self.dir_process))
         self.stdIn = self.session.makefile('wb', -1)
 
@@ -64,7 +64,8 @@ class RemoteInterpreter:
         self.command(msg)
         out = self.q_out.get()
         out = '\n'.join(out.msg)
-        print(out)
+        if len(out) > 0:
+            print(out)
 
     # Read from python
     def _loop_receive(self, interval=0.001):
