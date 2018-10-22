@@ -42,14 +42,14 @@ class Variable:
         new_var = self.__class__()
         for key, value in self.__dict__.items():
             if recursive and value is not None:
-                value = value.copy()
+                value = self._copy_recursive(value)
             setattr(new_var, key, value)
         return new_var
 
-    def replace(self, name: str):
+    def replace(self, name: str, value=None):
         if self.name == name:
-            return self.toward
-        self.toward = self._replace(self.toward, name)
+            return self.toward if value is None else value
+        self.toward = self._replace(self.toward, name, value)
         return self
 
     @property
@@ -102,11 +102,23 @@ class Variable:
             stack_called = set()
         return stack_called
 
+    @classmethod
+    def _copy_recursive(cls, value):
+        if value is None:
+            return None
+        # is list
+        if type(value) is list:
+            return [cls._copy_recursive(a) for a in value]
+        # is data
+        if hasattr(value, 'copy'):
+            return value.copy(recursive=True)
+        return value
+
     @staticmethod
-    def _replace(self, name: str):
+    def _replace(self, name: str, value):
         if self is None:
             return None
-        return self.replace(name)
+        return self.replace(name, value)
 
     def _name_is_constant(self):
         if self.name is None:
@@ -133,7 +145,7 @@ class Constant(Variable):
     def has_attr(self, name: str):
         return self.name == name
 
-    def replace(self, name: str):
+    def replace(self, name: str, value=None):
         return self
 
     @property
@@ -172,11 +184,11 @@ class Operator(Variable):
                     return True
         return False
 
-    def replace(self, name: str):
-        self.sub = self._replace(self.sub, name)
-        self.obj = self._replace(self.obj, name)
-        self.step = self._replace(self.step, name)
-        self.args = [self._replace(arg, name) for arg in self.args]
+    def replace(self, name: str, value=None):
+        self.sub = self._replace(self.sub, name, value)
+        self.obj = self._replace(self.obj, name, value)
+        self.step = self._replace(self.step, name, value)
+        self.args = [self._replace(arg, name, value) for arg in self.args]
         return self
 
     @property
@@ -275,10 +287,10 @@ class Method(Variable):
                     return True
         return False
 
-    def replace(self, name: str):
-        sub = super().replace(name)
+    def replace(self, name: str, value=None):
+        sub = super().replace(name, value)
         if not self.is_method_delegate:
-            sub.args = [self._replace(arg, name) for arg in sub.args]
+            sub.args = [self._replace(arg, name, value) for arg in sub.args]
         return sub
 
     def get_real_method(self):
@@ -341,9 +353,19 @@ class UserDefinedMethod(Method):
                 return True
         return False
 
-    def replace(self, name: str):
-        self.toward = self._replace(self.toward, name)
-        return self
+    def copy(self, recursive: bool = False):
+        new_var = self.__class__()
+        new_var.toward = self.toward.copy() if self.toward is not None else None
+        args_new = [arg.copy() for arg in self.args]
+        for arg in args_new:
+            new_var.toward.replace(arg.name, arg)
+        new_var.args = args_new
+        return new_var
+
+    def replace(self, name: str, value=None):
+        new_var = self.copy()
+        new_var.toward = new_var._replace(new_var.toward, name, value)
+        return new_var
 
     def encode(self, stack_called=None):
         stack_called = self._ensure_stack_not_none(stack_called)

@@ -149,7 +149,7 @@ class Plan:
         args = self.ATTR.AttrList([repeat_old, repeat_new])
         return self.ATTR.AttrOP(Exp.MUL[0], args)
 
-    def _execute_method_delegate(self, toward, args=None):
+    def _execute_method_delegate(self, toward):
         toward_origin = toward
         repeat = self._execute_method_fix(toward.repeat)
         while toward.toward is not None and not toward.is_method_defined:
@@ -159,6 +159,7 @@ class Plan:
         # if builtins
         if toward.is_builtins:
             method = Exp.BUILTINS[toward.name]
+            args = self.ATTR.AttrList(toward_origin.args, self._execute_recursive)
             return self.ATTR.AttrMethod(toward_origin.name, method, toward_origin, args, repeat)
         # if user-defined methods
         if toward.is_method_defined:
@@ -171,18 +172,18 @@ class Plan:
         if toward.is_method_delegate:
             return self._execute_method_delegate(toward)
         # call method
-        args = self.ATTR.AttrList(toward.args, self._execute_recursive)
-        method = self._execute_method_delegate(toward, args)
+        method = self._execute_method_delegate(toward)
         return method
 
     def _execute_method_defined(self, toward: data.UserDefinedMethod, name, args):
         # check sizeof args
         if len(toward.args) != len(args):
             raise TooMuchOrLessArguments(name, len(toward.args), len(args))
-        # call method
+        # replace with copy
         toward = toward.copy()
         for arg_from, arg_to in zip(args, toward.args):
             arg_to.toward = arg_from
+        # call method
         method = self._execute_recursive(toward.toward)
         method.code = toward.toward.encode()
         return method

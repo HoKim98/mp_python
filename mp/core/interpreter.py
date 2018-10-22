@@ -424,6 +424,11 @@ class Interpreter:
                     raise error.SyntaxError(w)
                 # just operators
                 if object_attr.head in Exp.Tokens_Operator:
+                    # parent is in-place operator
+                    if len(object_attr) == 2 and object_attr.head in Exp.Tokens_Inplace:
+                        object_attr = object_attr.insert_upper(w)
+                        object_attr.has_subject = True
+                        continue
                     # must be tuple
                     if len(object_attr) != 1:
                         raise error.SyntaxError(w)
