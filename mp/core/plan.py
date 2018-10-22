@@ -149,7 +149,7 @@ class Plan:
         args = self.ATTR.AttrList([repeat_old, repeat_new])
         return self.ATTR.AttrOP(Exp.MUL[0], args)
 
-    def _execute_method_delegate(self, toward):
+    def _execute_method_delegate(self, toward, args=None):
         toward_origin = toward
         repeat = self._execute_method_fix(toward.repeat)
         while toward.toward is not None and not toward.is_method_defined:
@@ -159,7 +159,7 @@ class Plan:
         # if builtins
         if toward.is_builtins:
             method = Exp.BUILTINS[toward.name]
-            return self.ATTR.AttrMethod(toward_origin.name, method, toward_origin, None, repeat)
+            return self.ATTR.AttrMethod(toward_origin.name, method, toward_origin, args, repeat)
         # if user-defined methods
         if toward.is_method_defined:
             return self._execute_method_defined(toward, toward_origin.name, toward_origin.args)
@@ -172,8 +172,7 @@ class Plan:
             return self._execute_method_delegate(toward)
         # call method
         args = self.ATTR.AttrList(toward.args, self._execute_recursive)
-        method = self._execute_method_delegate(toward)
-        method.args = args
+        method = self._execute_method_delegate(toward, args)
         return method
 
     def _execute_method_defined(self, toward: data.UserDefinedMethod, name, args):
@@ -183,7 +182,7 @@ class Plan:
         # call method
         toward = toward.copy()
         for arg_from, arg_to in zip(args, toward.args):
-            arg_to.toward = arg_from  # TODO a = foo(..., a) 꼴인지 확인할 것!
+            arg_to.toward = arg_from
         method = self._execute_recursive(toward.toward)
         method.code = toward.toward.encode()
         return method

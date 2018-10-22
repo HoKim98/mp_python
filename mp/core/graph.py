@@ -208,7 +208,7 @@ class Graph:
             self.vars[name] = self.vars[name].copy()
 
     # for in-place operators
-    def _inplace(self, sub, obj):
+    def inplace(self, sub, obj):
         # only variable, method, tuple in sub
         name = sub.name
         if not (sub.is_variable or sub.is_method or sub.is_operator):
@@ -236,7 +236,7 @@ class Graph:
             # only tuple-var(tuple)
             if obj.is_variable:
                 if obj.toward.is_tuple:
-                    return self._inplace(sub, obj.toward)
+                    return self.inplace(sub, obj.toward)
                 else:
                     raise SyntaxError(Exp.IS[0])
             else:
@@ -248,7 +248,7 @@ class Graph:
                 raise SyntaxError(Exp.IS[0])
             # in-place in order
             for arg_sub, arg_obj in zip(sub.args, obj.args):
-                self._inplace(arg_sub, arg_obj)
+                self.inplace(arg_sub, arg_obj)
             return sub
         # else (tuple-var, var-var)
         # rename if recursion
@@ -283,12 +283,12 @@ class Graph:
             sub = self.find(sub.name)
         # =
         if op in Exp.IS:
-            return self._inplace(sub, obj)
+            return self.inplace(sub, obj)
         # := (disposable substitute)
         if op in Exp.DIS:
             # don't use disposing while calculation
             if self.lock_point:
-                return self._inplace(sub, obj)
+                return self.inplace(sub, obj)
             # else
             sub.is_pointer = True
             sub.is_pointer_orient = True
@@ -308,7 +308,7 @@ class Graph:
             if sub.toward is None:
                 raise RequiredError(sub.name)
             tmp = Operator(op, sub.toward, obj, step)
-            return self._inplace(sub, tmp)
+            return self.inplace(sub, tmp)
         # out-place operators
         tmp = Operator(op, sub, obj, step)
         return tmp

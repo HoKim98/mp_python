@@ -264,6 +264,11 @@ class Method(Variable):
         self.repeat = repeat
 
     def has_attr(self, name: str):
+        if self.name == name:
+            return True
+        if self.toward is not None:
+            if self.toward.has_attr(name):
+                return True
         for arg in self.args:
             if arg is not None:
                 if arg.has_attr(name):
@@ -329,6 +334,16 @@ class UserDefinedMethod(Method):
     def __init__(self, name=None):
         super().__init__(name)
         self.is_method_defined = True
+
+    def has_attr(self, name: str):
+        if self.toward is not None:
+            if self.toward.has_attr(name):
+                return True
+        return False
+
+    def replace(self, name: str):
+        self.toward = self._replace(self.toward, name)
+        return self
 
     def encode(self, stack_called=None):
         stack_called = self._ensure_stack_not_none(stack_called)
