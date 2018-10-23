@@ -5,6 +5,8 @@ https://pypi.org/project/mp/)
 https://github.com/kerryeon/mp)
 [![Travis CI](https://travis-ci.com/kerryeon/mp.svg?branch=master)](
 https://travis-ci.com/kerryeon/mp)
+[![Coverage Status](https://coveralls.io/repos/github/kerryeon/mp/badge.svg?branch=master)](
+https://coveralls.io/github/kerryeon/mp?branch=master)
 [![Code Size](https://img.shields.io/github/languages/code-size/kerryeon/mp.svg)](
 https://pypi.org/project/mp/)
 
