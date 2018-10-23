@@ -1,3 +1,4 @@
+pytest
 m2r
 numpy
 PyQt5

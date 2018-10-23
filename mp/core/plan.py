@@ -20,9 +20,10 @@ class Plan:
 
     # execute along IO
     def execute(self):
-        self.graph.lock_point = True
+        # self.graph.lock_point = True
         try:
-            for var_name, append in self.graph.ios.items():
+            while len(self.graph.ios) > 0:
+                var_name, append = self.graph.ios.popitem()
                 # save
                 if append:
                     var = self.graph.vars[var_name]
@@ -203,6 +204,10 @@ class Plan:
             values = list(self.code_to_data(value))
             for value in values:
                 self.push(value)
+            # just script
+            if toward.toward is None:
+                var = data.Constant(self.graph.new_name(), 'b', False)
+                return self.ATTR.AttrConst(var.encode(), var)
             var = self._execute_recursive(toward)
             return var
         # if binary
