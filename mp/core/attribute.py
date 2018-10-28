@@ -1,4 +1,4 @@
-from mp.core.error import ConstError, NotDataError, RequiredError
+from mp.core.error import ConstError, NotDataError, RequiredError, TooMuchOrLessArguments
 from mp.core.error import TypeError as _TypeError
 from mp.core.expression import Expression as Exp
 
@@ -95,9 +95,8 @@ class Attr:
 
 
 class AttrConst(Attr):
-    def __init__(self, code, value):
+    def __init__(self, value):
         super().__init__('const')
-        self.code = code
         self.value = value
 
     @property
@@ -137,6 +136,14 @@ class AttrList:
 
     def get_values(self):
         return [self.ATTR.to_value(arg) for arg in self.list]
+
+    def assert_sizeof(self, symbol: str, expected: int, greater_or_less: int = 0):
+        if greater_or_less == 0 and len(self) != expected:
+            raise TooMuchOrLessArguments(symbol, expected, len(self), greater_or_less)
+        if greater_or_less > 0 and len(self) < expected:
+            raise TooMuchOrLessArguments(symbol, expected, len(self), greater_or_less)
+        if greater_or_less < 0 and len(self) > expected:
+            raise TooMuchOrLessArguments(symbol, expected, len(self), greater_or_less)
 
     def __getitem__(self, item):
         raise NotImplementedError
@@ -223,8 +230,15 @@ class AttrIndexed(AttrOP):
 
     def _calculate(self):
         sub = self.sub.get_value()
+        # if method delegate
+        if sub.is_method and sub.args is None:
+            return self._calculate_method_delegate(sub)
         args = self.args.get_values()
         return self._calculate_indexed(sub, args)
+
+    def _calculate_method_delegate(self, sub):
+        sub.args = self.args
+        return sub.get_value()
 
     def _calculate_indexed(self, sub, args):
         raise NotImplementedError
@@ -255,7 +269,8 @@ class AttrMethod(Attr):
         # if pointing method
         if self.args is None:
             self.is_data = False
-            return None
+            return self
+            # return None
         # if repeat call
         result = None
         if self.repeat is not None:
@@ -268,6 +283,24 @@ class AttrMethod(Attr):
         self.is_data = self.toward.is_data
         return result
 
+
+class AttrIteration(AttrMethod):
+    CONST = AttrConst
+
+    def __init__(self, name: str, method, toward, args, repeat=None):
+        super().__init__(name, method, toward, args, repeat)
+
+    def _calculate(self):
+        if self.repeat is None:
+            return self.method.get_value()
+        # if repeat call
+        value = None
+        for _ in range(self.repeat.get_value()):
+            value = self.method.get_value()
+            final = self.CONST(value)
+            self.method.args.list[-2].toward = final
+        return value
+# (_=print((a=(pow=def($1,$2,((def($1,$2,($1*$2))*$2))($1,1i64)))(2i64,5i64))))
 
 class AttrDict:
 
@@ -287,4 +320,4 @@ class AttrDict:
         return Attr(key)
 
 
-attr_classes = (Attr, AttrConst, AttrIndexed, AttrMethod, AttrOP, AttrView)
+attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrView)

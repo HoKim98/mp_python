@@ -87,4 +87,8 @@ class AttrDict(_attribute.AttrDict):
         return Attr(key)
 
 
-attr_classes = (Attr, AttrConst, AttrIndexed, AttrMethod, AttrOP, AttrView)
+class AttrIteration(_attribute.AttrIteration):
+    CONST = AttrConst
+
+
+attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrView)

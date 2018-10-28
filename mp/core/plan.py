@@ -45,6 +45,7 @@ class Plan:
         # echo
         if toward is None:
             return None
+        print(toward)
         # if required
         if toward.is_required:
             var = self._find_variable(toward)
@@ -104,7 +105,7 @@ class Plan:
             raise SyntaxError(toward.num_type)
         # create new array object
         value = self._new_const(toward)
-        const = self.ATTR.AttrConst(toward.encode(), value)
+        const = self.ATTR.AttrConst(value)
         return const
 
     def _execute_operator_modify(self, toward):
@@ -136,11 +137,6 @@ class Plan:
         op = self.ATTR.AttrView(sub, args)
         return op
 
-    def _execute_method_fix(self, toward):
-        if toward is not None:
-            return self._execute_recursive(toward)
-        return None
-
     def _execute_method_update_repeat(self, repeat_old, repeat_new):
         if repeat_old is None:
             return repeat_new
@@ -152,19 +148,24 @@ class Plan:
 
     def _execute_method_delegate(self, toward):
         toward_origin = toward
-        repeat = self._execute_method_fix(toward.repeat)
+        repeat = self._execute_recursive(toward.repeat)
         while toward.toward is not None and not toward.is_method_defined:
             toward = toward.toward
-            repeat_new = self._execute_method_fix(toward.repeat)
+            repeat_new = self._execute_recursive(toward.repeat)
             repeat = self._execute_method_update_repeat(repeat, repeat_new)
         # if builtins
         if toward.is_builtins:
             method = Exp.BUILTINS[toward.name]
-            args = self.ATTR.AttrList(toward_origin.args, self._execute_recursive)
+            # if still delegate
+            if toward.is_method_delegate:
+                args = None
+            # is attributes
+            else:
+                args = self.ATTR.AttrList(toward_origin.args, self._execute_recursive)
             return self.ATTR.AttrMethod(toward_origin.name, method, toward_origin, args, repeat)
         # if user-defined methods
         if toward.is_method_defined:
-            return self._execute_method_defined(toward, toward_origin.name, toward_origin.args)
+            return self._execute_method_defined(toward, toward_origin.name, toward_origin.args, toward.repeat)
         # undefined error
         raise RequiredError(toward.name)
 
@@ -176,7 +177,7 @@ class Plan:
         method = self._execute_method_delegate(toward)
         return method
 
-    def _execute_method_defined(self, toward: data.UserDefinedMethod, name, args):
+    def _execute_method_defined(self, toward: data.UserDefinedMethod, name, args, repeat):
         # check sizeof args
         if len(toward.args) != len(args):
             raise TooMuchOrLessArguments(name, len(toward.args), len(args))
@@ -187,6 +188,9 @@ class Plan:
         # call method
         method = self._execute_recursive(toward.toward)
         method.code = toward.toward.encode()
+
+        repeat = self._execute_recursive(repeat)
+        method = self.ATTR.AttrIteration(toward.name, method, toward, None, repeat)
         return method
 
     # find variable from file-system
@@ -207,7 +211,7 @@ class Plan:
             # just script
             if toward.toward is None:
                 var = data.Constant(self.graph.new_name(), 'b', False)
-                return self.ATTR.AttrConst(var.encode(), var)
+                return self.ATTR.AttrConst(var)
             var = self._execute_recursive(toward)
             return var
         # if binary
@@ -229,4 +233,4 @@ class Plan:
 
     @classmethod
     def get_builtin_methods(cls):
-        return [t for t in dir(cls.BUILTINS) if not t.startswith('_')], cls.BUILTINS
+        return [t for t in dir(cls.BUILTINS) if t.startswith('__')], cls.BUILTINS

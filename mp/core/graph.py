@@ -85,6 +85,8 @@ class Graph:
             if toward.toward is None:
                 raise RequiredError(toward.name)
         self.rename(name, self.new_name())
+        if toward.repeat is not None:
+            repeat = toward.repeat
         sub = Method(name, toward, repeat=repeat)
         sub.name = name
         self.vars[name] = sub

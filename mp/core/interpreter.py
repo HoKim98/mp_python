@@ -208,6 +208,8 @@ class Interpreter:
 
     @classmethod
     def add_module(cls, module_name: str, module_func):
+        if module_name.startswith('__'):
+            module_name = module_name[2:]
         Exp.BUILTINS[module_name] = module_func
 
     def code_to_data(self, message: str):
@@ -242,7 +244,7 @@ class Interpreter:
         external_methods, modules = plan.get_builtin_methods()
         for module_name in external_methods:
             module_func = getattr(modules, module_name)
-            Exp.BUILTINS[module_name] = module_func
+            self.add_module(module_name, module_func)
         if Exp.ARRAY not in Exp.BUILTINS.keys():
             raise NotImplementedError
 
