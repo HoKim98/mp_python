@@ -95,12 +95,6 @@ class Token:
                         for i, arg in enumerate(args, 1):
                             if not (arg.is_variable and arg.is_none):
                                 raise SyntaxError(arg.symbol)
-                            # detach from graph
-                            graph.gc(arg)
-                            graph.detach(arg.name)
-                            # rename cause of collision
-                            arg.name = '%s%d' % (Exp.CODE_METHOD, i)
-                        graph.detach(toward.name)
                         var.args = args
                         var.toward = toward
                     # if user-defined method

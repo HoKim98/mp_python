@@ -45,7 +45,6 @@ class Plan:
         # echo
         if toward is None:
             return None
-        print(toward)
         # if required
         if toward.is_required:
             var = self._find_variable(toward)
@@ -143,16 +142,13 @@ class Plan:
         if repeat_new is None:
             return repeat_old
         # multiply repeat numbers
-        args = self.ATTR.AttrList([repeat_old, repeat_new])
-        return self.ATTR.AttrOP(Exp.MUL[0], args)
+        return data.Operator(Exp.MUL[0], repeat_old, repeat_new)
 
     def _execute_method_delegate(self, toward):
         toward_origin = toward
-        repeat = self._execute_recursive(toward.repeat)
+        repeat = toward.repeat
         while toward.toward is not None and not toward.is_method_defined:
             toward = toward.toward
-            repeat_new = self._execute_recursive(toward.repeat)
-            repeat = self._execute_method_update_repeat(repeat, repeat_new)
         # if builtins
         if toward.is_builtins:
             method = Exp.BUILTINS[toward.name]
@@ -162,10 +158,11 @@ class Plan:
             # is attributes
             else:
                 args = self.ATTR.AttrList(toward_origin.args, self._execute_recursive)
+            repeat = self._execute_recursive(repeat)
             return self.ATTR.AttrMethod(toward_origin.name, method, toward_origin, args, repeat)
         # if user-defined methods
         if toward.is_method_defined:
-            return self._execute_method_defined(toward, toward_origin.name, toward_origin.args, toward.repeat)
+            return self._execute_method_defined(toward, toward_origin.name, toward_origin.args, repeat)
         # undefined error
         raise RequiredError(toward.name)
 
@@ -181,16 +178,20 @@ class Plan:
         # check sizeof args
         if len(toward.args) != len(args):
             raise TooMuchOrLessArguments(name, len(toward.args), len(args))
-        # replace with copy
-        toward = toward.copy()
-        for arg_from, arg_to in zip(args, toward.args):
-            arg_to.toward = arg_from
+        args = self.ATTR.AttrList(args, self._execute_recursive)
+        # put into placeholder
+        for arg_to in toward.args:
+            if arg_to.is_required:
+                arg_to.toward = data.Placeholder()
+        # add placeholders
+        placeholders = self.ATTR.AttrList(toward.args, self._execute_recursive)
         # call method
         method = self._execute_recursive(toward.toward)
         method.code = toward.toward.encode()
-
-        repeat = self._execute_recursive(repeat)
-        method = self.ATTR.AttrIteration(toward.name, method, toward, None, repeat)
+        # add repeat
+        repeat = self._execute_recursive(repeat)  # TODO script.md를 돌려보면, c_mul의 repeat가 잘못 정의돼있다.
+        # create iteration
+        method = self.ATTR.AttrIteration(toward.name, method, toward, placeholders, args, repeat)
         return method
 
     # find variable from file-system

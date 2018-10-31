@@ -76,7 +76,7 @@ class Expression:
     INDICES = '^'
 
     CODE_CONST = '/'
-    CODE_METHOD = '$'
+    CODE_PLACEHOLDER = '__placeholder__'
 
     # DIR_CURRENT = 'now'
     # DIR_UP = 'up'
@@ -129,3 +129,5 @@ class Expression:
         tuple(SBO): tuple(SBC),
         tuple(ABO): tuple(ABC),
     }
+
+    TYPES_DEFAULT = [INT_DEFAULT, FLOAT_DEFAULT, ]

@@ -1,8 +1,10 @@
 from mp import PythonInterpreter
 from mp import RemoteInterpreter
 
+from mp.utils import draw_graph
+
 PATH_SCRIPT = 'script'
-VARS_TEST = ['at', 'bt', ]
+VARS_TEST = ['at', 'bt', 'ct', ]
 
 
 def _curdir():
@@ -19,6 +21,8 @@ def test_python():
     interpreter = PythonInterpreter(_curdir())
     interpreter('save %s' % PATH_SCRIPT)
     _test(interpreter)
+
+    draw_graph(interpreter.plan.graph)
 
 
 def test_remote():

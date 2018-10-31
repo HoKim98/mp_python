@@ -123,7 +123,7 @@ class AttrConst(Attr):
         return self.value
 
     def __repr__(self):
-        return self.name
+        return self.value
 
 
 class AttrList:
@@ -287,20 +287,35 @@ class AttrMethod(Attr):
 class AttrIteration(AttrMethod):
     CONST = AttrConst
 
-    def __init__(self, name: str, method, toward, args, repeat=None):
+    def __init__(self, name: str, method, toward, placeholders, args, repeat=None):
         super().__init__(name, method, toward, args, repeat)
+        self.placeholders = placeholders
+
+    def _apply_placeholder(self):
+        for arg_from, arg_to in zip(self.placeholders.list, self.args.list):
+            arg_from.toward = arg_to
 
     def _calculate(self):
+        # fill placeholders into args
+        self._apply_placeholder()
+        # if normal call
         if self.repeat is None:
             return self.method.get_value()
         # if repeat call
         value = None
-        for _ in range(self.repeat.get_value()):
+        # save origin value
+        origin = self.method.args.list[-2].toward
+        # begin iteration
+        for _ in range(int(self.repeat.get_value())):
+            # calculate
             value = self.method.get_value()
+            # update final value
             final = self.CONST(value)
             self.method.args.list[-2].toward = final
+        # revert origin value
+        self.method.args.list[-2].toward = origin
         return value
-# (_=print((a=(pow=def($1,$2,((def($1,$2,($1*$2))*$2))($1,1i64)))(2i64,5i64))))
+
 
 class AttrDict:
 
@@ -308,9 +323,6 @@ class AttrDict:
         self.dict = dict()
 
     def __getitem__(self, name) -> Attr:
-        # if method's args
-        if name.startswith('$'):
-            return self._new_attr(name)
         # create new attr if not exists
         if name not in self.dict.keys():
             self.dict[name] = self._new_attr(name)

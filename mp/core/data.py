@@ -24,6 +24,7 @@ class Variable:
         self.is_method = False
         self.is_method_delegate = False
         self.is_method_defined = False
+        self.is_placeholder = False
 
         self.is_builtins = False
         # callable or constant
@@ -62,13 +63,13 @@ class Variable:
 
     @property
     def is_required(self):
-        return self.is_variable and self.toward is None
+        return self.is_variable and self.toward is None and not self.is_placeholder
 
     @property
     def symbol(self):
         if self.name is not None:
             # is constant
-            if self.name.startswith('/'):
+            if self.name.startswith(Exp.CODE_CONST):
                 return self.toward.symbol
             return self.name
         raise NotImplementedError
@@ -85,6 +86,9 @@ class Variable:
         stack_called.add(name)
         # if required
         if toward is None:
+            return name
+        # if placeholder
+        if self.toward.is_placeholder:
             return name
         # = :=
         op = Exp.DIS[0] if self.is_pointer_orient else Exp.IS[0]
@@ -123,7 +127,7 @@ class Variable:
     def _name_is_constant(self):
         if self.name is None:
             return True
-        return self.name.startswith('/')
+        return self.name.startswith(Exp.CODE_CONST)
 
     def __bool__(self):
         if self.is_constant:
@@ -153,11 +157,14 @@ class Constant(Variable):
         return str(self.value)
 
     def encode(self, stack_called=None):
-        value = self.value
+        value = str(self.value)
         # boolean to numeric
         if self.num_type == Exp.BOOL:
-            value = 1 if value else 0
-        return '%s%s' % (str(value), self.num_type)
+            value = '1' if value else '0'
+        # default type
+        if self.num_type in Exp.TYPES_DEFAULT:
+            return value
+        return '%s%s' % (value, self.num_type)
 
     def __repr__(self):
         return '%s' % str(self.value)
@@ -381,8 +388,7 @@ class UserDefinedMethod(Method):
         stack_called = self._ensure_stack_not_none(stack_called)
         name = self.name
         # has repeat
-        args = [arg.name for arg in self.args]
-        stack_called = stack_called.union(set(args))
+        args = [self._encode(arg, stack_called) for arg in self.args]
         args += [self._encode(self.toward, stack_called)]
         name = '%s%s%s%s' % (name, Exp.RBO[0], ','.join(args), Exp.RBC[0])
         if self.repeat is not None:
@@ -394,3 +400,9 @@ def Builtins(method: str):
     func = Method(method)
     func.is_builtins = True
     return func
+
+
+def Placeholder():
+    var = Variable(Exp.CODE_PLACEHOLDER)
+    var.is_placeholder = True
+    return var
