@@ -1,3 +1,7 @@
+from mp.core.expression import Expression as Exp
+from mp.utils import assert_filename
+
+
 class GraphWriter:
     """
         The following code relies on the 'mermaid' library.
@@ -6,11 +10,17 @@ class GraphWriter:
 
     NODE_IDX = ['|sub|', '|obj|', '|step|', '|repeat|']
     VIEWPOINTS = ['LR', 'TD', ]
+    LEVEL = [1, 2, 3, ]
 
-    def __init__(self, filename: str = None, viewpoint: str = VIEWPOINTS[0]):
-        self.filename = filename
+    SPECIAL_CHAR = {
+        '-': ' - ',
+    }
+
+    def __init__(self, filename: str = None, viewpoint: str = VIEWPOINTS[0], level: int = LEVEL[-1]):
+        self.filename = assert_filename(filename, 'mg')
         self.buffer = ''
         self.viewpoint = 'graph %s' % viewpoint
+        self.level = level
         self.flush()
 
         self.vars = list()
@@ -48,6 +58,10 @@ class GraphWriter:
     def _edge(self, edge):
         code = self._encode(edge)
         symbol = edge.symbol
+        if symbol in Exp.Tokens_In2Out.keys():
+            symbol = Exp.Tokens_In2Out[symbol]
+        if symbol in self.SPECIAL_CHAR.keys():
+            symbol = self.SPECIAL_CHAR[symbol]
         if edge.is_constant:
             return '%s(%s)' % (code, symbol)
         if edge.is_variable:
@@ -71,15 +85,13 @@ class GraphWriter:
             return edge.symbol
         if edge.is_constant:
             return edge.symbol
-        if edge.is_operator or edge.is_method_defined:
+        if edge.is_operator or edge.is_method or edge.is_method_defined:
             if edge in self.ops:
                 idx = self.ops.index(edge)
             else:
                 self.ops.append(edge)
                 idx = len(self.ops) - 1
             return '?%s' % idx
-        if edge.is_method:
-            return edge.symbol
         raise NotImplementedError
 
     def __call__(self, msg: str = ''):
@@ -98,8 +110,8 @@ class GraphWriter:
         self()
 
     @classmethod
-    def draw(cls, graph, filename: str = None, viewpoint: str = VIEWPOINTS[0]):
-        writer = GraphWriter(filename, viewpoint)
+    def draw(cls, graph, filename: str = None, viewpoint: str = VIEWPOINTS[0], level: int = LEVEL[-1]):
+        writer = GraphWriter(filename, viewpoint, level)
         for var in graph.vars.values():
             writer._draw_var(var)
         writer.save(flush=False)

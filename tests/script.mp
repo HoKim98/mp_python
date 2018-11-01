@@ -19,8 +19,8 @@
     c_pow = def(c3, c4, (c_mul * c4)(c3, 1))
 
     c5 = c_pow(2, 8)
-    c5 += c_pow(3, 2)
-    ct = (c5 == 265)
+    c5 -= c_pow(3, 2)
+    ct = (c5 == 247)
 
 # PRINT
     _ = print(at, bt, ct)

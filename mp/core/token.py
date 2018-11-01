@@ -91,10 +91,10 @@ class Token:
                         if len(operands) == 1:
                             raise SyntaxError(var.name)
                         args, toward = operands[1:-1], operands[-1]
-                        # args should be pointer
-                        for i, arg in enumerate(args, 1):
-                            if not (arg.is_variable and arg.is_none):
-                                raise SyntaxError(arg.symbol)
+                        # args should be pointer TODO
+                        # for i, arg in enumerate(args, 1):
+                        #     if not (arg.is_variable and arg.is_none):
+                        #         raise SyntaxError(arg.symbol)
                         var.args = args
                         var.toward = toward
                     # if user-defined method

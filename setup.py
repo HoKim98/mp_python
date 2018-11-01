@@ -1,21 +1,11 @@
-try:
-    from m2r import parse_from_file
-    import_ok = True
-except ModuleNotFoundError:
-    import_ok = False
-
 from setuptools import find_packages, setup
 import mp
 
 
 # Read in the README for the long description on PyPI
 def long_description():
-    if not import_ok:
-        return ''
-    # (m2r) .md to .rst
-    readme = parse_from_file('README.md')
-    with open('README.rst', 'w') as f:
-        f.write(readme)
+    with open('README.md') as f:
+        readme = f.read().splitlines()
     return readme
 
 
@@ -29,6 +19,7 @@ setup(name='mp',
       version=mp.__version__,
       description=mp.__doc__,
       long_description=long_description(),
+      long_description_content_type='text/markdown',
       url='https://github.com/kerryeon/mp',
       author='kerryeon',
       author_email='besqer996@gnu.ac.kr',

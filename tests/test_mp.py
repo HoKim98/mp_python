@@ -1,7 +1,7 @@
 from mp import PythonInterpreter
 from mp import RemoteInterpreter
 
-from mp.utils import draw_graph
+from mp.markdown import draw_graph, draw_script
 
 PATH_SCRIPT = 'script'
 VARS_TEST = ['at', 'bt', 'ct', ]
@@ -23,6 +23,7 @@ def test_python():
     _test(interpreter)
 
     draw_graph(interpreter.plan.graph)
+    draw_script(interpreter.plan.graph)
 
 
 def test_remote():
