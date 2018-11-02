@@ -18,10 +18,16 @@
     c_mul = def(c1, c2, c1 * c2)
     c_pow = def(c3, c4, (c_mul * c4)(c3, 1))
 
-    c5 = c_pow(2, 8)
-    c5 -= c_pow(3, 2)
-    ct = (c5 == 247)
+    c5 = c_pow(2, 8) - c_pow(3, 2)
+    c5 -= c_pow(1, 1)
+    ct = (c5 == 246)
+
+# IF
+    d1 = 3
+    d2 = 4
+    d3 = if(d1 == d2, 5, 6)
+    dt = d3 == 6
 
 # PRINT
-    _ = print(at, bt, ct)
+    _ = print(at, bt, ct, dt)
     save _

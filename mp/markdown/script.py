@@ -1,16 +1,14 @@
 from mp.core.expression import Expression as Exp
-from mp.utils import assert_filename
+from mp.markdown.base import _BaseWriter
 
 
-class ScriptWriter:
+class ScriptWriter(_BaseWriter):
     """
         The following code relies on the 'markdown' script.
     """
 
     def __init__(self, filename: str = None):
-        self.filename = assert_filename(filename, 'mp')
-        self.buffer = ''
-        self.flush()
+        super().__init__(filename, 'mp')
 
         self.vars = list()
 
@@ -67,9 +65,8 @@ class ScriptWriter:
             return '%s = %s' % (sub, toward)
         if var.is_method:
             sub = var.name
-            if sub not in self.vars:
-                if var.repeat is not None:
-                    sub = '(%s * %s)' % (sub, self._wrap('*', var.repeat))
+            if var.repeat is not None:
+                sub = '(%s * %s)' % (sub, self._wrap('*', var.repeat))
             args = [self._encode(arg) for arg in var.args]
             return '%s(%s)' % (sub, ', '.join(args))
 
@@ -101,29 +98,11 @@ class ScriptWriter:
     def _comment(self, msg):
         self('# %s' % msg)
 
-    def __call__(self, msg: str = ''):
-        self.buffer += '%s\n' % msg
-
-    def save(self, flush=True):
-        if self.filename is not None:
-            with open(self.filename, 'w') as f:
-                f.write(self.buffer)
-        if flush:
-            self.flush()
-
     def flush(self):
-        self.buffer = ''
+        super().flush()
         self._comment('Auto-Generated from Mp-ScriptWriter')
         self._comment('-----------------------------------')
         self()
-
-    @classmethod
-    def draw(cls, graph, filename: str = None):
-        writer = ScriptWriter(filename)
-        for var in graph.vars.values():
-            writer._draw_var(var)
-        writer.save(flush=False)
-        return writer.buffer
 
 
 draw_script = ScriptWriter.draw

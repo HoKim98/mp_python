@@ -1,8 +1,8 @@
 from mp.core.expression import Expression as Exp
-from mp.utils import assert_filename
+from mp.markdown.base import _BaseWriter
 
 
-class GraphWriter:
+class GraphWriter(_BaseWriter):
     """
         The following code relies on the 'mermaid' library.
         https://mermaidjs.github.io/
@@ -17,11 +17,9 @@ class GraphWriter:
     }
 
     def __init__(self, filename: str = None, viewpoint: str = VIEWPOINTS[0], level: int = LEVEL[-1]):
-        self.filename = assert_filename(filename, 'mg')
-        self.buffer = ''
         self.viewpoint = 'graph %s' % viewpoint
         self.level = level
-        self.flush()
+        super().__init__(filename, 'mg')
 
         self.vars = list()
         self.ops = list()
@@ -94,28 +92,10 @@ class GraphWriter:
             return '?%s' % idx
         raise NotImplementedError
 
-    def __call__(self, msg: str = ''):
-        self.buffer += '%s\n' % msg
-
-    def save(self, flush=True):
-        if self.filename is not None:
-            with open(self.filename, 'w') as f:
-                f.write(self.buffer)
-        if flush:
-            self.flush()
-
     def flush(self):
-        self.buffer = ''
+        super().flush()
         self(self.viewpoint)
         self()
-
-    @classmethod
-    def draw(cls, graph, filename: str = None, viewpoint: str = VIEWPOINTS[0], level: int = LEVEL[-1]):
-        writer = GraphWriter(filename, viewpoint, level)
-        for var in graph.vars.values():
-            writer._draw_var(var)
-        writer.save(flush=False)
-        return writer.buffer
 
 
 draw_graph = GraphWriter.draw

@@ -152,14 +152,9 @@ class Plan:
         # if builtins
         if toward.is_builtins:
             method = Exp.BUILTINS[toward.name]
-            # if still delegate
-            if toward.is_method_delegate:
-                args = None
-            # is attributes
-            else:
-                args = self.ATTR.AttrList(toward_origin.args, self._execute_recursive)
+            args = self.ATTR.AttrList(toward_origin.args, self._execute_recursive)
             repeat = self._execute_recursive(repeat)
-            return self.ATTR.AttrMethod(toward_origin.name, method, toward_origin, args, repeat)
+            return self.ATTR.AttrMethod(toward.name, method, toward_origin, args, repeat)
         # if user-defined methods
         if toward.is_method_defined:
             return self._execute_method_defined(toward, toward_origin.name, toward_origin.args, repeat)
@@ -189,7 +184,7 @@ class Plan:
         method = self._execute_recursive(toward.toward)
         method.code = toward.toward.encode()
         # add repeat
-        repeat = self._execute_recursive(repeat)  # TODO script.md를 돌려보면, c_mul의 repeat가 잘못 정의돼있다.
+        repeat = self._execute_recursive(repeat)
         # create iteration
         method = self.ATTR.AttrIteration(toward.name, method, toward, placeholders, args, repeat)
         return method

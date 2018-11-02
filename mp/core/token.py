@@ -66,9 +66,6 @@ class Token:
                     for f in operands[1:]:
                         operate(root, f)
                 return None
-            # (iterate) values
-            elif self.name in Exp.NEXT:
-                pass  # TODO next 구문을 어떻게 구현할 지 다시한번 생각할 것.
             # slice
             elif self.name in Exp.IDX:
                 start = operands[0]
@@ -85,26 +82,18 @@ class Token:
                 # call method
                 sub = operands[0]
                 if sub.is_method_delegate:
-                    var = sub.copy()
                     # if user-defined method delegate
-                    if var.is_method_defined and var.toward is None:
+                    if sub.is_method_defined and sub.toward is None:
+                        var = sub
                         if len(operands) == 1:
                             raise SyntaxError(var.name)
                         args, toward = operands[1:-1], operands[-1]
-                        # args should be pointer TODO
-                        # for i, arg in enumerate(args, 1):
-                        #     if not (arg.is_variable and arg.is_none):
-                        #         raise SyntaxError(arg.symbol)
                         var.args = args
                         var.toward = toward
                     # if user-defined method
-                    elif var.is_method_defined:
-                        var = graph.point_method(graph.new_name(), var)
-                        var.args = operands[1:]
-                        var.is_data = True
-                        var.is_method_delegate = False
-                    # if to call
+                    # or just to call
                     else:
+                        var = graph.point_method(graph.new_name(), sub)
                         var.args = operands[1:]
                         var.is_data = True
                         var.is_method_delegate = False
@@ -116,7 +105,7 @@ class Token:
                 # repeat call
                 sub = operands[0]
                 if sub.is_method_delegate:
-                    var = sub.copy()
+                    var = graph.point_method(graph.new_name(), sub)
                     repeat = operands[1]
                     # double multiply
                     if var.repeat is not None:

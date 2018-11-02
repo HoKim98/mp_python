@@ -426,8 +426,8 @@ class Interpreter:
                     raise error.SyntaxError(w)
                 # just operators
                 if object_attr.head in Exp.Tokens_Operator:
-                    # parent is in-place operator
-                    if len(object_attr) == 2 and object_attr.head in Exp.Tokens_Inplace:
+                    # parent is operator
+                    if len(object_attr) == 2 and object_attr.head in Exp.Tokens_Operator:
                         object_attr = object_attr.insert_upper(w)
                         object_attr.has_subject = True
                         continue
@@ -613,7 +613,6 @@ class Interpreter:
         # analyse prefixes
         prefix_from = None
         save_files = 0
-        next_iters = 0
         delete_files = 0
         prefixes_iter = iter(prefixes)
         for token in prefixes_iter:
@@ -626,14 +625,11 @@ class Interpreter:
                 prefix_from = Token.from_var(''.join(prefix_from))
             elif token in Exp.SAVE:
                 save_files += 1
-            # iteration
-            elif token in Exp.NEXT:
-                next_iters += 1
             # delete files
             elif token in Exp.DELETE:
                 delete_files += 1
             # check overlap
-            if save_files + next_iters + delete_files >= 2:
+            if save_files + delete_files >= 2:
                 raise error.SyntaxError(token)
 
         query = query.to_data()
@@ -648,16 +644,6 @@ class Interpreter:
                 return func(prefix_from, query)
             if query.data_type == Token.TYPE_TUPLE:
                 return func(prefix_from, *query.args)
-            else:
-                raise error.SyntaxError(op)
-        # (iterate) values
-        for op, test in zip([Exp.NEXT[0]], [next_iters]):
-            if not test:
-                continue
-            if prefix_from is not None:
-                raise error.SyntaxError(op)
-            if query.data_type == Token.TYPE_VARIABLE:
-                return Token.from_operator(op, query)
             else:
                 raise error.SyntaxError(op)
         # just data

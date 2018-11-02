@@ -49,7 +49,6 @@ class Expression:
     SHELL_SS = ['[]']
     SHELL_AA = ['{}']
 
-    NEXT = ['next']
     FROM = ['from']
     SAVE = ['save']
     DELETE = ['del']
@@ -96,7 +95,7 @@ class Expression:
     Tokens_Operator = IS + DIS + IDX + IADD + ISUB + IMUL + ITDIV + IMAT + IMOD + IPOW + IFDIV + \
                       EQ + NEQ + GT + GE + LT + LE + ADD + SUB + MAT + MUL + TDIV + MOD + FDIV + POW
 
-    Tokens_Prefix = NEXT + FROM + SAVE + DELETE
+    Tokens_Prefix = FROM + SAVE + DELETE
     Tokens_Open = RBO + ABO + SBO
     Tokens_Close = RBC + ABC + SBC
     Tokens_Shell = SHELL_RR + SHELL_SS + SHELL_AA

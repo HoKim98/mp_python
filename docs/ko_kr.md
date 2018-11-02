@@ -75,12 +75,12 @@ $ python setup.py install
 | **Mac (Python)**      |                    |                    | *                 | *              |
 
 ## 향후계획 (TODO)
-* [x] 메소드 반복 호출
-* [x] 사용자 정의 메소드 (미완)
-* [ ] 반복문
-* [ ] `cd` 구현하기
+* [x] 사용자 정의 메소드 (테스트중)
+* [x] 반복문 (테스트중)
+* [ ] 역전파
 * [ ] GUI 기반 그래프 프로그래밍
 * [ ] `PyTorch` 인터프리터 구현
+* [ ] `Markdown` 문서 자동화
 
 ## 라이선스
 [MIT License](https://github.com/kerryeon/mp/blob/master/LICENSE)

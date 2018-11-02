@@ -4,7 +4,7 @@ from mp import RemoteInterpreter
 from mp.markdown import draw_graph, draw_script
 
 PATH_SCRIPT = 'script'
-VARS_TEST = ['at', 'bt', 'ct', ]
+VARS_TEST = ['at', 'bt', 'ct', 'dt', ]
 
 
 def _curdir():
@@ -22,7 +22,7 @@ def test_python():
     interpreter('save %s' % PATH_SCRIPT)
     _test(interpreter)
 
-    draw_graph(interpreter.plan.graph)
+    print(draw_graph(interpreter.plan.graph))
     draw_script(interpreter.plan.graph)
 
 

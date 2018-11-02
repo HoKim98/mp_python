@@ -143,8 +143,16 @@ class Graph:
             if is_removed:
                 del var
             return is_removed
+        # is user-defined method
+        if var.is_method_defined:
+            self.gc(var.repeat)
+            self.gc(var.toward)
+            for arg in var.args:
+                self.gc(arg)
+            del var
+            return True
         # is variable
-        if var.is_variable or var.is_method_delegate:  # TODO user-defined methods 의 gc 메소드 구현
+        if var.is_variable or var.is_method_delegate:
             # already removed
             if name not in self.vars.keys() and var.is_variable:
                 return True
@@ -180,6 +188,17 @@ class Graph:
                     del var
                     return True
             return False
+        # if method
+        if var.is_method:
+            self.gc(var.repeat)
+            self.gc(var.toward)
+            for arg in var.args:
+                self.gc(arg)
+            # never enter toward
+            if var.toward is not None:
+                return False
+            del var
+            return True
         # else
         # find using
         if name in self.vars.keys():
