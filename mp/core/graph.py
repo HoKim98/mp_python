@@ -358,3 +358,7 @@ class Graph:
     def slice(cls, start, stop, step):
         op = Exp.IDX[0]
         return Operator(op, start, stop, step)
+
+    @classmethod
+    def set_placeholder(cls, var):
+        var.toward = Placeholder()

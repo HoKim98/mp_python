@@ -1,5 +1,2 @@
 numpy
-PyQt5
-graphviz
-pydot
 paramiko

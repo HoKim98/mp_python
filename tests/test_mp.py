@@ -4,7 +4,6 @@ from mp import RemoteInterpreter
 from mp.markdown import draw_graph, draw_script
 
 PATH_SCRIPT = 'script'
-VARS_TEST = ['at', 'bt', 'ct', 'dt', ]
 
 
 def _curdir():
@@ -13,8 +12,14 @@ def _curdir():
 
 
 def _test(interpreter):
-    for var_name in VARS_TEST:
-        assert interpreter.plan.attr[var_name].get_value()
+    code = 'a'.encode()[0]
+    attrs = interpreter.plan.attr
+    while True:
+        name = '%st' % bytes([code]).decode()
+        if name not in attrs.dict.keys():
+            break
+        assert attrs[name].get_value()
+        code += 1
 
 
 def test_python():
@@ -22,7 +27,7 @@ def test_python():
     interpreter('save %s' % PATH_SCRIPT)
     _test(interpreter)
 
-    print(draw_graph(interpreter.plan.graph))
+    draw_graph(interpreter.plan.graph)
     draw_script(interpreter.plan.graph)
 
 

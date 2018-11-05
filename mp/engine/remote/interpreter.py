@@ -21,8 +21,11 @@ class RemoteInterpreter:
     PROMPT = b'@ '
     # PROMPT = b'>>> '
 
+    PRE_COMMAND = ''
+
     def __init__(self, dir_process: str = '.'):
-        self.dir_process = dir_process
+        self._dir_process = dir_process
+        self._dir_process_remote = None
 
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -36,11 +39,10 @@ class RemoteInterpreter:
         self.ssh.connect(hostname, port=port, username=username, password=password)
 
     # Open Python Session
-    def session(self, python: str = 'python'):
+    def session(self, python: str = 'python', pre_command: str = PRE_COMMAND):
         self.session = self.ssh.get_transport().open_session()
         self.session.get_pty()
-        self.session.exec_command('cd ~/mp; %s -m mp.console' % python)  # TODO
-        # self.session.exec_command('%s -m mp.console --dir-process %s' % (python, self.dir_process))
+        self.session.exec_command(pre_command + '%s -m mp.console --dir-process %s' % (python, self.dir_process))
         self.stdIn = self.session.makefile('wb', -1)
 
         t = Thread(target=self._loop_receive, args=())
@@ -66,6 +68,19 @@ class RemoteInterpreter:
         out = '\n'.join(out.msg)
         if len(out) > 0:
             print(out)
+
+    @property
+    def dir_process(self) -> str:
+        if self._dir_process_remote is not None:
+            return self._dir_process_remote
+        if self.ssh is None:
+            return self._dir_process
+        stdout = self.ssh.exec_command('cd %s; pwd' % self._dir_process)[1]
+        stdout.channel.recv_exit_status()
+        lines = stdout.readlines()
+        pwd = lines[0].rstrip()
+        self._dir_process_remote = pwd
+        return pwd
 
     # Read from python
     def _loop_receive(self, interval=0.001):

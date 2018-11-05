@@ -210,7 +210,23 @@ class AttrView(AttrOP):
     def _calculate(self):
         sub = self.sub.get_value()
         args = self.args.get_values()
+
+        # dim
+        if len(args) == 0:
+            return self._calculate_dim(sub)
+        # sizeof
+        if len(args) == 1:
+            return self._calculate_sizeof(sub, args[0])
+        # transpose
         return self._calculate_view(sub, args)
+
+    @classmethod
+    def _calculate_dim(cls, sub):
+        raise NotImplementedError
+
+    @classmethod
+    def _calculate_sizeof(cls, sub, axis):
+        raise NotImplementedError
 
     def _calculate_view(self, sub, args):
         raise NotImplementedError
@@ -231,14 +247,31 @@ class AttrIndexed(AttrOP):
     def _calculate(self):
         sub = self.sub.get_value()
         # if method delegate
-        if sub.is_method and sub.args is None:
-            return self._calculate_method_delegate(sub)
+        if hasattr(sub, 'is_data'):
+            if sub.is_method and sub.args is None:
+                return self._calculate_method_delegate(sub)
+
         args = self.args.get_values()
+        # copy object
+        if len(args) == 0:
+            return self._calculate_copy(sub)
+        # slicing
+        # check size
+        dim_sub = self._calculate_dim(sub)
+        dim_args = len(args)
+        if dim_sub < dim_args:
+            raise TooMuchOrLessArguments(self.symbol, dim_sub, dim_args, -1)
         return self._calculate_indexed(sub, args)
 
     def _calculate_method_delegate(self, sub):
         sub.args = self.args
         return sub.get_value()
+
+    def _calculate_dim(self, sub):
+        raise NotImplementedError
+
+    def _calculate_copy(self, sub):
+        raise NotImplementedError
 
     def _calculate_indexed(self, sub, args):
         raise NotImplementedError

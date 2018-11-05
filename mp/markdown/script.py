@@ -106,13 +106,3 @@ class ScriptWriter(_BaseWriter):
 
 
 draw_script = ScriptWriter.draw
-
-
-if __name__ == '__main__':
-    from mp import PythonInterpreter
-    a = PythonInterpreter()
-    a('a = 3')
-    a('b = 4')
-    a('c = def(a, b, a + b) * ( 7+8)')
-    a('d = c(a, b)')
-    print(draw_script(a.plan.graph))

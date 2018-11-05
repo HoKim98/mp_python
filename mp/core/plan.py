@@ -174,10 +174,6 @@ class Plan:
         if len(toward.args) != len(args):
             raise TooMuchOrLessArguments(name, len(toward.args), len(args))
         args = self.ATTR.AttrList(args, self._execute_recursive)
-        # put into placeholder
-        for arg_to in toward.args:
-            if arg_to.is_required:
-                arg_to.toward = data.Placeholder()
         # add placeholders
         placeholders = self.ATTR.AttrList(toward.args, self._execute_recursive)
         # call method

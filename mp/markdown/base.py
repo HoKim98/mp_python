@@ -28,6 +28,10 @@ class _BaseWriter:
     def flush(self):
         self.buffer = ''
 
+    @classmethod
+    def _graph_to_vars(cls, graph):
+        return graph.vars.values()
+
     class _toggle_method_name:
         def __init__(self, graph_vars):
             self.graph_vars = graph_vars
@@ -46,8 +50,9 @@ class _BaseWriter:
     @classmethod
     def draw(cls, graph, filename: str = None, *args, **kwargs):
         writer = cls(filename, *args, **kwargs)
-        with cls._toggle_method_name(graph.vars.values()):
-            for var in graph.vars.values():
+        graph_vars = cls._graph_to_vars(graph)
+        with cls._toggle_method_name(graph_vars):
+            for var in graph_vars:
                 writer._draw_var(var)
         writer.save(flush=False)
         return writer.buffer

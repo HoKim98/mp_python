@@ -28,6 +28,14 @@
     d3 = if(d1 == d2, 5, 6)
     dt = d3 == 6
 
+# INDICES & VIEW
+    e1 = array(3, 4, 5)
+    e2 = e1(:, 2:, 1::2)()
+    e3 = e2{}
+    e4 = e2{2}
+    e5 = e1{1, 0}{0}
+    et = (e3 == 3) * (e4 == 2) * (e5 == 4)
+
 # PRINT
-    _ = print(at, bt, ct, dt)
+    _ = print(at, bt, ct, dt, et)
     save _

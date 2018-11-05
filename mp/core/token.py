@@ -90,6 +90,10 @@ class Token:
                         args, toward = operands[1:-1], operands[-1]
                         var.args = args
                         var.toward = toward
+                        # put into placeholder
+                        for arg_to in args:
+                            if arg_to.is_required:
+                                graph.set_placeholder(arg_to)
                     # if user-defined method
                     # or just to call
                     else:

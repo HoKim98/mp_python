@@ -1,6 +1,6 @@
 # Basic Description
 __name__ = 'mp'
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 __doc__ = """Machine Pseudo-Code"""
 
 # Author Information
