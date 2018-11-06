@@ -307,10 +307,6 @@ class Method(Variable):
             return self.toward.symbol
         raise NotImplementedError
 
-    @property
-    def symbol(self):
-        return self.name
-
     def encode(self, stack_called=None):
         stack_called = self._ensure_stack_not_none(stack_called)
         name = self.name

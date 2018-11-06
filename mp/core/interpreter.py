@@ -207,10 +207,9 @@ class Interpreter:
         self._init_builtin_methods(self.plan)
 
     @classmethod
-    def add_module(cls, module_name: str, module_func):
-        if module_name.startswith('__'):
-            module_name = module_name[2:]
-        Exp.BUILTINS[module_name] = module_func
+    def add_module(cls, module_func):
+        method_name = module_func.method_name
+        Exp.BUILTINS[method_name] = module_func
 
     def code_to_data(self, message: str):
         lines = message.split(Exp.NEXTLINE)
@@ -219,15 +218,6 @@ class Interpreter:
             prefixes, query = self._parser(tokens)
             data = self._semantic_analysis(prefixes, query)
             yield data
-
-    def execute_script(self, var_name: str):
-        path = self.plan.io.get_path(var_name, self.dir_process)
-        path = '%s.%s' % (path, Exp.EXTENSION_SOURCE)
-        if not os.path.exists(path):
-            raise IOError(path)
-        with open(path, 'r') as f:
-            msg = f.read()
-            self(msg)
 
     def begin_interactive(self, debug=False):
         _interactive(self, debug=debug)
@@ -244,9 +234,7 @@ class Interpreter:
         external_methods, modules = plan.get_builtin_methods()
         for module_name in external_methods:
             module_func = getattr(modules, module_name)
-            self.add_module(module_name, module_func)
-        if Exp.ARRAY not in Exp.BUILTINS.keys():
-            raise NotImplementedError
+            self.add_module(module_func)
 
     @classmethod
     def _scanner(cls, line: str):

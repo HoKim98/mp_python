@@ -77,7 +77,7 @@ class _Interactive(cmd.Cmd):
         return True
 
 
-def interactive(self, verbose=False, debug=False):
+def interactive(self, verbose=True, debug=False):
     v_cmd = _Interactive(self, debug)
     if not verbose:
         v_cmd.intro = ''

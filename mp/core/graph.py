@@ -15,6 +15,8 @@ class Graph:
         self.ios = dict()
         # do not make pointer
         self.lock_point = False
+        # point self
+        self.var_self = list()
 
     # make new variable name
     def new_name(self):
@@ -49,12 +51,15 @@ class Graph:
         if name in Exp.REQUIRED:
             return Required()
         # this is a method
-        if name in Exp.BUILTINS:
-            return Builtins(name)
+        for method in Exp.BUILTINS.values():
+            if method.test(name):
+                return Builtins(name)
         # this is user-defined method
         if name in Exp.METHOD:
             return UserDefinedMethod(name)
-
+        # replace 'self'
+        if name.startswith(Exp.CODE_SELF):
+            name = '%s%s' % (self.get_self(), name[len(Exp.CODE_SELF):])
         # find in graph
         if name in self.vars.keys():
             return self.vars[name]
@@ -84,7 +89,7 @@ class Graph:
             # if just declaring
             if toward.toward is None:
                 raise RequiredError(toward.name)
-        self.rename(name, self.new_name())
+        self.rename(name, self.new_name())  # TODO 이전 변수 자리에 대체 가능한가?
         if toward.repeat is not None:
             repeat = toward.repeat
         sub = Method(name, toward, repeat=repeat)
@@ -362,3 +367,15 @@ class Graph:
     @classmethod
     def set_placeholder(cls, var):
         var.toward = Placeholder()
+
+    def get_self(self):
+        for name in reversed(self.var_self):
+            if name is not None:
+                return '%s%s' % (self.var_self[-1], Exp.DOT)
+        return ''
+
+    def push_self(self, name: str = None):
+        self.var_self.append(name)
+
+    def pop_self(self):
+        self.var_self.pop(-1)

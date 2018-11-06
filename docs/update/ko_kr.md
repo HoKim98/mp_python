@@ -1,3 +1,18 @@
+## 0.3.2 업데이트 내역
+1. 이제, 변수명 앞에 `self.`를 붙여서, 현재 변수의 경로명을 축약할 수 있습니다.
+2. 이제, 확장 메소드를 추가할 때, `mp.core.extension` 데코레이터를 붙여야 합니다.
+    * 이제, 메소드명을 정규표현식 꼴로 정의할 수 있습니다.
+    ```python
+    from mp.core import extension
+    
+    # 역전파를 통해 기울기를 구하는 메소드이다.
+    # 마치 객체의 메소드인 듯 사용할 수 있다.
+    @extension(r'.[.]backward$')
+    def backward(toward, args):
+       pass
+    ```
+    * 이름이 고정된 메소드의 경우, `mp.core.extension.static`을 이용합니다.
+
 ## 0.3.1 업데이트 내역
 1. `PyTorch`를 지원하는 `mp.engine.pytorch` 모듈이 생성되었습니다.
     * 추후 `pip`를 통해 설치할 수 있도록 할 예정입니다.

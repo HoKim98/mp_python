@@ -1,8 +1,13 @@
-def __array(toward, args):
+from mp.core.builtins_decorator import extension
+
+
+@extension.static('array')
+def method_array(toward, args):
     raise NotImplementedError
 
 
-def __print(toward, args):
+@extension.static('print')
+def method_print(toward, args):
     values = args.get_values()
     for arg, value in zip(args.list, values):
         if arg.is_constant:
@@ -14,7 +19,8 @@ def __print(toward, args):
     return None
 
 
-def __if(toward, args):
+@extension.static('if')
+def method_if(toward, args):
     args.assert_sizeof(toward.symbol, 3)
     condition = bool(args.list[0].get_value())
     result = args.list[2 - int(condition)]

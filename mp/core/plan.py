@@ -50,26 +50,26 @@ class Plan:
             var = self._find_variable(toward)
             return var
         # is variable
-        if type(toward) is data.Variable:
+        if toward.is_variable:
             return self._execute_variable(toward)
         # is constant
-        if type(toward) is data.Constant:
+        if toward.is_constant:
             return self._execute_constant(toward)
         # is operator
-        if type(toward) is data.Operator:
+        if toward.is_operator:
             return self._execute_operator(toward)
         # is slicing
-        if type(toward) is data.Indexed:
+        if toward.is_indices:
             return self._execute_indexed(toward)
         # is view
-        if type(toward) is data.View:
+        if toward.is_view:
             return self._execute_view(toward)
-        # is method
-        if type(toward) is data.Method:
-            return self._execute_method(toward)
         # is user-defined method
-        if type(toward) is data.UserDefinedMethod:
+        if toward.is_method_defined:
             raise RequiredError(toward.name)
+        # is method
+        if toward.is_method:
+            return self._execute_method(toward)
         raise NotImplementedError
 
     def _execute_variable_modify(self, var, toward):
@@ -151,7 +151,10 @@ class Plan:
             toward = toward.toward
         # if builtins
         if toward.is_builtins:
-            method = Exp.BUILTINS[toward.name]
+            method = None
+            for method in Exp.BUILTINS.values():
+                if method.test(toward.name):
+                    break
             args = self.ATTR.AttrList(toward_origin.args, self._execute_recursive)
             repeat = self._execute_recursive(repeat)
             return self.ATTR.AttrMethod(toward.name, method, toward_origin, args, repeat)
@@ -197,9 +200,14 @@ class Plan:
             raise RequiredError(name)
         # if graph
         if type(value) is str:
+            # set 'self'
+            self.graph.push_self(name)
+            # load script
             values = list(self.code_to_data(value))
             for value in values:
                 self.push(value)
+            # remove 'self'
+            self.graph.pop_self()
             # just script
             if toward.toward is None:
                 var = data.Constant(self.graph.new_name(), 'b', False)
@@ -225,4 +233,4 @@ class Plan:
 
     @classmethod
     def get_builtin_methods(cls):
-        return [t for t in dir(cls.BUILTINS) if t.startswith('__')], cls.BUILTINS
+        return [t for t in dir(cls.BUILTINS) if hasattr(getattr(cls.BUILTINS, t), 'method_name')], cls.BUILTINS

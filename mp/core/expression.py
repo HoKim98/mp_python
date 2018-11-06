@@ -76,12 +76,13 @@ class Expression:
 
     CODE_CONST = '/'
     CODE_PLACEHOLDER = '__placeholder__'
+    CODE_SELF = 'self%s' % DOT
 
     # DIR_CURRENT = 'now'
     # DIR_UP = 'up'
 
     ARRAY = 'array'
-    BUILTINS = {ARRAY: NotImplemented, }
+    BUILTINS = {r'^%s$' % ARRAY: NotImplemented, }
 
     EXTENSION_SOURCE = 'mp'
     EXTENSION_BINARY = 'mpb'

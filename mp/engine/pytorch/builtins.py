@@ -1,22 +1,25 @@
-from mp.core import error
+from mp.core import extension
 from mp.engine.pytorch.attribute import torch as _torch
 
 _float_to_int = lambda args: [int(arg) for arg in args]
 
 
-def __array(toward, args):
+@extension.static('array')
+def method_array(toward, args):
     args = _float_to_int(args.get_values())
     value = _torch.zeros(*args)
     return value
 
 
-def __max(toward, args):
+@extension.static('max')
+def method_max(toward, args):
     args.assert_sizeof(toward.symbol, 2, +1)
     args = args.get_values()
     return max(args)
 
 
-def __min(toward, args):
+@extension.static('min')
+def method_min(toward, args):
     args.assert_sizeof(toward.symbol, 2, +1)
     args = args.get_values()
     return min(args)

@@ -309,10 +309,10 @@ class AttrMethod(Attr):
         if self.repeat is not None:
             num_repeat = int(self.repeat.get_value())
             for _ in range(num_repeat):
-                result = self.method(self.toward, self.args)
+                result = self.method.execute(self.toward, self.args)
         # else
         else:
-            result = self.method(self.toward, self.args)
+            result = self.method.execute(self.toward, self.args)
         self.is_data = self.toward.is_data
         return result
 
