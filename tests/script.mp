@@ -41,5 +41,4 @@
     ft = self.f1 == script.f1
 
 # PRINT
-    _ = print(at, bt, ct, dt, et, ft)
-    save _
+    print at, bt, ct, dt, et, ft
