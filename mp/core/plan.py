@@ -22,23 +22,32 @@ class Plan:
     def execute(self):
         # self.graph.lock_point = True
         try:
-            while len(self.graph.ios) > 0:
-                var_name, append = self.graph.ios.popitem()
-                # save
-                if append:
-                    var = self.graph.vars[var_name]
-                    value = self._execute_recursive(var)
-                    value.get_value()
-                # delete
-                else:
-                    value = None
+            # (save, delete) files
+            for var_name, var, value in self._get_wait_list(self.graph.ios):
                 self.io.set(var_name, value)
+            # (print) files
+            for var_name, var, value in self._get_wait_list(self.graph.prints):
+                self.print_var(var, value)
         # if error : finish
         except BaseError as e:
             self.graph.clean()
             raise e
         self.graph.lock_point = False
         self.graph.clean()
+
+    def _get_wait_list(self, wait_list):
+        while len(wait_list) > 0:
+            var_name, append = wait_list.popitem()
+            # save
+            if append:
+                var = self.graph.vars[var_name]
+                value = self._execute_recursive(var)
+                value.get_value()
+            # delete
+            else:
+                var = None
+                value = None
+            yield var_name, var, value
 
     # execute recursively along IO
     def _execute_recursive(self, toward: data.Variable):
@@ -230,6 +239,10 @@ class Plan:
         # has query
         if value is not None:
             value.update_graph(self.graph)
+
+    @classmethod
+    def print_var(cls, var, value):
+        print('%s = %s' % (var.symbol, value.get_value()))
 
     @classmethod
     def get_builtin_methods(cls):

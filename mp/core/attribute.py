@@ -305,15 +305,22 @@ class AttrMethod(Attr):
             return self
             # return None
         # if repeat call
-        result = None
+        result = self._assert_result_not_none(None)
         if self.repeat is not None:
             num_repeat = int(self.repeat.get_value())
             for _ in range(num_repeat):
                 result = self.method.execute(self.toward, self.args)
+                result = self._assert_result_not_none(result)
         # else
         else:
             result = self.method.execute(self.toward, self.args)
+            result = self._assert_result_not_none(result)
         self.is_data = self.toward.is_data
+        return result
+
+    def _assert_result_not_none(self, result):
+        if result is None:
+            result = 0
         return result
 
 

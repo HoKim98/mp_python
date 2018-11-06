@@ -78,7 +78,27 @@ class AttrIndexed(_attribute.AttrIndexed):
         return sub.clone()
 
     def _calculate_indexed(self, sub, args):
+        args = self._assert_int(args)
         return sub[tuple(args)]
+
+    def _assert_int(self, args):
+        args = list(args)
+        for i, arg in enumerate(args):
+            if arg is None:
+                continue
+            if type(arg) is slice:
+                arg = (self._assert_int_unit(arg.start),
+                       self._assert_int_unit(arg.stop),
+                       self._assert_int_unit(arg.step))
+                args[i] = slice(*arg)
+                continue
+            args[i] = self._assert_int_unit(arg)
+        return args
+
+    def _assert_int_unit(self, arg):
+        if arg is None:
+            return arg
+        return arg.type(torch.int64)
 
 
 class AttrMethod(_attribute.AttrMethod):

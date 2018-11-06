@@ -34,6 +34,10 @@ class Token:
         return Token(Exp.DELETE[0], cls.TYPE_OPERATOR, dir_from, *files)
 
     @classmethod
+    def from_print(cls, dir_from, *files):
+        return Token(Exp.PRINT[0], cls.TYPE_OPERATOR, dir_from, *files)
+
+    @classmethod
     def from_number(cls, num_type, value):
         return Token(num_type, cls.TYPE_NUMBER, value)
 
@@ -56,9 +60,18 @@ class Token:
     def update_graph_recursive(self, graph):
         if self.data_type == self.TYPE_OPERATOR:
             operands = self._get_operands(self.args, graph)
-            # (save, delete) files
-            if self.name in Exp.SAVE + Exp.DELETE:
-                operate = graph.save if self.name in Exp.SAVE else graph.delete
+            # (save, delete, print) files
+            if self.name in Exp.SAVE + Exp.DELETE + Exp.PRINT:
+                # operation mapping
+                if self.name in Exp.SAVE:
+                    operate = graph.save
+                elif self.name in Exp.SAVE:
+                    operate = graph.delete
+                elif self.name in Exp.PRINT:
+                    operate = graph.print
+                else:
+                    raise NotImplementedError
+                # case
                 if len(operands) == 1:
                     operate(None, operands[0])
                 else:

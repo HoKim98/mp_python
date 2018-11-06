@@ -52,6 +52,7 @@ class Expression:
     FROM = ['from']
     SAVE = ['save']
     DELETE = ['del']
+    PRINT = ['print']
 
     METHOD = ['def']
     REQUIRED = ['required']
@@ -70,7 +71,7 @@ class Expression:
     INT = 'i'
     FLOAT = 'f'
     INT_DEFAULT = 'i64'
-    FLOAT_DEFAULT = 'f64'
+    FLOAT_DEFAULT = 'f32'
 
     INDICES = '^'
 
@@ -96,7 +97,7 @@ class Expression:
     Tokens_Operator = IS + DIS + IDX + IADD + ISUB + IMUL + ITDIV + IMAT + IMOD + IPOW + IFDIV + \
                       EQ + NEQ + GT + GE + LT + LE + ADD + SUB + MAT + MUL + TDIV + MOD + FDIV + POW
 
-    Tokens_Prefix = FROM + SAVE + DELETE
+    Tokens_Prefix = FROM + SAVE + DELETE + PRINT
     Tokens_Open = RBO + ABO + SBO
     Tokens_Close = RBC + ABC + SBC
     Tokens_Shell = SHELL_RR + SHELL_SS + SHELL_AA

@@ -40,6 +40,7 @@ $ python -m mp.console
 ```
 @ y = x + 3
 @ x = 2
+@ print y
 @ save y
 ```
 

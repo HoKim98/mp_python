@@ -602,6 +602,7 @@ class Interpreter:
         prefix_from = None
         save_files = 0
         delete_files = 0
+        print_files = 0
         prefixes_iter = iter(prefixes)
         for token in prefixes_iter:
             if type(token[0]) is not str:
@@ -616,16 +617,19 @@ class Interpreter:
             # delete files
             elif token in Exp.DELETE:
                 delete_files += 1
+            # print variables
+            elif token in Exp.PRINT:
+                print_files += 1
             # check overlap
-            if save_files + delete_files >= 2:
+            if save_files + delete_files + print_files >= 2:
                 raise error.SyntaxError(token)
 
         query = query.to_data()
 
-        # (save, delete) files
-        for op, test, func in zip([Exp.SAVE[0], Exp.DELETE[0]],
-                                  [save_files, delete_files],
-                                  [Token.from_save, Token.from_delete]):
+        # (save, delete, print) files
+        for op, test, func in zip([Exp.SAVE[0], Exp.DELETE[0], Exp.PRINT[0]],
+                                  [save_files, delete_files, print_files],
+                                  [Token.from_save, Token.from_delete, Token.from_print]):
             if not test:
                 continue
             if query.data_type == Token.TYPE_VARIABLE:

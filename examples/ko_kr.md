@@ -6,7 +6,6 @@
     - [일회성 정의 (Test)](#ch1-4)
 2. [메소드 호출](#ch2)
     - [내장 메소드 호출](#ch2-1)
-    - [반복 호출](#ch2-2)
 3. [사용자 정의 메소드 호출](#ch3)
     - [수식 불러오기](#ch3-1)
     - [함수 구현하기](#ch3-2)
@@ -33,8 +32,7 @@
 @ b = 4
 @ c = a + b
 @ 
-@ _ = print(c)
-@ save _
+@ print c
 
 c = 7
 ```
@@ -48,8 +46,7 @@ c = 7
 @ b = 4
 @ c = a < b
 @ 
-@ _ = print(c)
-@ save _
+@ print c
 
 c = True
 ```
@@ -65,8 +62,7 @@ c = True
 @ D = b ** 2 - 4 * a * c
 @ x = (-1 * b - D ** .5) / (2 * a)
 @ 
-@ _ = print(D, x)
-@ save _
+@ print D, x
 
 D = 0
 x = 1.0
@@ -87,8 +83,7 @@ x = 1.0
 @ b := 1
 @ b = 2
 @ 
-@ _ = print(a, b)
-@ save _
+@ print a, b
 
 a = 1
 b = 2
@@ -99,44 +94,24 @@ b = 2
 <a name="ch2-1"></a>
 ### 내장 메소드 호출
 연관 파일 : `ch2/method.mp`\
-내장 메소드를 호출해봅시다. 현재 `array`, `print`, `max`, `min`이 구현되었습니다.
+내장 메소드를 호출해봅시다. 현재 `array`, `max`, `min`이 구현되었습니다.
 ```
 @ # 함수를 가리키는 변수들
-@ foo = print
+@ foo = array
 @ goo = foo
 @ too = goo
 @ 
 @ # (3, 4) 크기의 배열을 만들고, 2를 더한다.
-@ potato = array(3, 4) + 2
-@ # 배열을 파이썬(Python)처럼 인덱싱할 수 있습니다.
+@ potato = too(3, 4) + 2
+@ # 배열을 파이썬처럼(Pythonic) 인덱싱할 수 있습니다.
 @ k = potato(0, 1:3) + 3
 @ 
-@ # print는 두 개 이상의 변수도 허용됩니다.
-@ _ = too(potato, k)
-@ save _
+@ print potato, k
 
+k = [5. 5.]
 potato = [[2. 2. 2. 2.]
  [2. 2. 2. 2.]
  [2. 2. 2. 2.]]
-k = [5. 5.]
-```
-<a name="ch2-2"></a>
-### 반복 호출
-연관 파일 : `ch2/repeat.mp`\
-함수를 여러 번 호출하는 경우, * 연산자를 이용하여 간단하게 반복할 수 있습니다.
-```
-@ i = 5
-@ a = 3.14
-@ 
-@ foo = print * i
-@ _ = foo(a)
-@ save _
-
-a = 3.14
-a = 3.14
-a = 3.14
-a = 3.14
-a = 3.14
 ```
 
 <a name="ch3"></a>
@@ -155,12 +130,11 @@ a = 3.14
 ```
 ```
 # 생성된 aaa.mp
-(aaa=((x=3i64)+(y=4i64)))
+(aaa=((x=3)+(y=4)))
 ```
 ```
 # 인터프리터 모드 (aaa.mp 파일 불러오기)
-@ _ = print(aaa)
-@ save _
+@ print aaa
 
 aaa = 7
 ```
@@ -171,8 +145,7 @@ aaa = 7
 ```
 @ foo = def(x, y, x + y)
 @ aaa = foo(3, 4)
-@ _ = print(aaa)
-@ save _
+@ print aaa
 
 aaa = 7
 ```
@@ -194,8 +167,7 @@ aaa = 7
 @ # 실험값
 @ a = mul(3, 5)
 @ b = pow(3, 5)
-@ _ = print(a, b)
-@ save _
+@ print a, b
 
 a = 15
 b = 243
@@ -214,8 +186,7 @@ b = 243
 @ my cat's year = 2.9
 @ 
 @ # my house는 myhouse와 같습니다.
-@ _ = print(myhouse, my cat's year)
-@ save _
+@ print myhouse, my cat's year
 
 myhouse = 3
 mycat'syear = 2.9

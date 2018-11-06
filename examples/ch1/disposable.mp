@@ -6,5 +6,4 @@ a := 2
 b := 1
 b = 2
 
-_ = print(a, b)
-save _
+print a, b

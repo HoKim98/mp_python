@@ -13,6 +13,8 @@ class Graph:
         self.vars = dict()
         # save/delete files sometime
         self.ios = dict()
+        # print files sometime
+        self.prints = dict()
         # do not make pointer
         self.lock_point = False
         # point self
@@ -98,7 +100,7 @@ class Graph:
         return sub
 
     # save sometime
-    def save(self, dir_from, *args, save=True):
+    def save(self, dir_from, *args, save=True, filesystem=True):
         if dir_from is not None:
             if type(dir_from) is not Variable:
                 raise SyntaxError(dir_from.symbol)
@@ -118,11 +120,17 @@ class Graph:
                 file.toward = None
                 self.gc(file)
                 self.gc(old)
-            self.ios[name] = save
+            # (save, delete) or (print) files
+            wait_list = self.ios if filesystem else self.prints
+            wait_list[name] = save
 
     # delete sometime
     def delete(self, dir_from, *args):
         self.save(dir_from, *args, save=False)
+
+    # print sometime
+    def print(self, dir_from, *args):
+        self.save(dir_from, *args, filesystem=False)
 
     # choose whether remove
     def gc(self, var):

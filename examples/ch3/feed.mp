@@ -8,5 +8,4 @@ pow = def(pow_x, pow_y, pow_z)
 # 실험값
 a = mul(3, 5)
 b = pow(3, 5)
-_ = print(a, b)
-save _
+print a, b
