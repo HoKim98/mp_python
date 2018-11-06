@@ -55,15 +55,15 @@ class Plan:
         # is constant
         if toward.is_constant:
             return self._execute_constant(toward)
-        # is operator
-        if toward.is_operator:
-            return self._execute_operator(toward)
         # is slicing
         if toward.is_indices:
             return self._execute_indexed(toward)
         # is view
         if toward.is_view:
             return self._execute_view(toward)
+        # is operator
+        if toward.is_operator:
+            return self._execute_operator(toward)
         # is user-defined method
         if toward.is_method_defined:
             raise RequiredError(toward.name)

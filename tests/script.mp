@@ -36,6 +36,10 @@
     e5 = e1{1, 0}{0}
     et = (e3 == 3) * (e4 == 2) * (e5 == 4)
 
+# SELF
+    self.f1 = 3.14
+    ft = self.f1 == script.f1
+
 # PRINT
-    _ = print(at, bt, ct, dt, et)
+    _ = print(at, bt, ct, dt, et, ft)
     save _
