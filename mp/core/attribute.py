@@ -42,6 +42,9 @@ class Attr:
         self.code = None
         self.value = None
 
+        self.is_attr = True
+        self.fixed = False
+
         # callable or constant
         self.is_data = True
         self.is_method = False
@@ -55,6 +58,12 @@ class Attr:
             if self.toward is not None:
                 self.is_data = self.toward.is_data
         return self.value
+
+    def remove_cache(self):
+        if self.toward is not None:
+            if not self.toward.fixed:
+                self.value = None
+                self.toward.remove_cache()
 
     @property
     def symbol(self):
@@ -110,6 +119,9 @@ class AttrConst(Attr):
     @property
     def toward(self):
         return self
+
+    def remove_cache(self):
+        pass
 
     @toward.setter
     def toward(self, toward):
@@ -173,6 +185,11 @@ class AttrOP(Attr):
     @property
     def reusable(self):
         return False
+
+    def remove_cache(self):
+        for arg in self.args.list:
+            if arg is not None:
+                arg.remove_cache()
 
     def _calculate(self):
         args = self.args.get_values()
@@ -281,11 +298,12 @@ class AttrIndexed(AttrOP):
 
 
 class AttrMethod(Attr):
-    def __init__(self, name: str, method, toward, args, repeat=None):
+    def __init__(self, name: str, method, toward, args, fixed, repeat=None):
         super().__init__(name, toward)
         self.is_method = True
         self.method = method
         self.args = args
+        self.fixed = fixed
 
         self.code = toward.encode()
         self.repeat = repeat
@@ -297,6 +315,12 @@ class AttrMethod(Attr):
     @property
     def reusable(self):
         return False
+
+    def remove_cache(self):
+        if self.args is not None and not self.fixed:
+            for arg in self.args.list:
+                if arg is not None:
+                    arg.remove_cache()
 
     def _calculate(self):
         # if pointing method
@@ -328,11 +352,23 @@ class AttrIteration(AttrMethod):
     CONST = AttrConst
 
     def __init__(self, name: str, method, toward, placeholders, args, repeat=None):
-        super().__init__(name, method, toward, args, repeat)
+        super().__init__(name, method, toward, args, False, repeat)
         self.placeholders = placeholders
+        self.args_bak = None
+
+    def remove_cache(self):
+        for arg in self.args.list:
+            if arg is not None:
+                arg.remove_cache()
 
     def _apply_placeholder(self):
+        self.args_bak = list()
         for arg_from, arg_to in zip(self.placeholders.list, self.args.list):
+            self.args_bak.append(arg_from.toward)
+            arg_from.toward = arg_to
+
+    def _revert_placeholder(self):
+        for arg_from, arg_to in zip(self.placeholders.list, self.args_bak):
             arg_from.toward = arg_to
 
     def _calculate(self):
@@ -340,20 +376,23 @@ class AttrIteration(AttrMethod):
         self._apply_placeholder()
         # if normal call
         if self.repeat is None:
-            return self.method.get_value()
+            self.fixed = self.method.fixed
+            value = self.method.get_value()
+            self._revert_placeholder()
+            return value
         # if repeat call
         value = None
         # save origin value
-        origin = self.method.args.list[-2].toward
+        feedback = self.placeholders.list[-1]
         # begin iteration
         for _ in range(int(self.repeat.get_value())):
             # calculate
             value = self.method.get_value()
             # update final value
             final = self.CONST(value)
-            self.method.args.list[-2].toward = final
+            feedback.toward = final
         # revert origin value
-        self.method.args.list[-2].toward = origin
+        self._revert_placeholder()
         return value
 
 

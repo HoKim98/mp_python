@@ -154,22 +154,27 @@ class Plan:
         return data.Operator(Exp.MUL[0], repeat_old, repeat_new)
 
     def _execute_method_delegate(self, toward):
+        name = toward.name
         toward_origin = toward
         repeat = toward.repeat
         while toward.toward is not None and not toward.is_method_defined:
             toward = toward.toward
+            if name.startswith(Exp.CODE_CONST):
+                name = toward.name
         # if builtins
         if toward.is_builtins:
             method = None
+            fixed = None
             for method in Exp.BUILTINS.values():
                 if method.test(toward.name):
+                    fixed = method.fixed
                     break
             args = self.ATTR.AttrList(toward_origin.args, self._execute_recursive)
             repeat = self._execute_recursive(repeat)
-            return self.ATTR.AttrMethod(toward.name, method, toward_origin, args, repeat)
+            return self.ATTR.AttrMethod(name, method, toward_origin, args, fixed, repeat)
         # if user-defined methods
         if toward.is_method_defined:
-            return self._execute_method_defined(toward, toward_origin.name, toward_origin.args, repeat)
+            return self._execute_method_defined(toward, name, toward_origin.args, repeat)
         # undefined error
         raise RequiredError(toward.name)
 
@@ -183,8 +188,8 @@ class Plan:
 
     def _execute_method_defined(self, toward: data.UserDefinedMethod, name, args, repeat):
         # check sizeof args
-        if len(toward.args) != len(args):
-            raise TooMuchOrLessArguments(name, len(toward.args), len(args))
+        if toward.args_min > len(args) or toward.args_max < len(args):
+            raise TooMuchOrLessArguments(name, toward.args_min, len(args), int(toward.args_min != toward.args_max))
         args = self.ATTR.AttrList(args, self._execute_recursive)
         # add placeholders
         placeholders = self.ATTR.AttrList(toward.args, self._execute_recursive)

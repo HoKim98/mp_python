@@ -13,6 +13,8 @@ class Variable:
         self.obj = None
         self.step = None
         self.args = []
+        self.args_min = 0
+        self.args_max = 0
 
         self.is_pointer = False
         self.is_pointer_orient = False
@@ -93,6 +95,9 @@ class Variable:
         # = :=
         op = Exp.DIS[0] if self.is_pointer_orient else Exp.IS[0]
         return '%s%s%s%s%s' % (Exp.RBO[0], name, op, toward, Exp.RBC[0])
+
+    def remove_cache(self):
+        pass
 
     @staticmethod
     def _encode(self, stack_called):
@@ -277,7 +282,6 @@ class Method(Variable):
         super().__init__(name, toward)
         self.is_method_delegate = True
         self.is_method = True
-        self.is_data = False
         self.args = args
 
         self.repeat = repeat
@@ -335,14 +339,10 @@ class Method(Variable):
             else:
                 args = '%s' % Exp.COMMA.join(args)
             # not just mention (sub)
-            if name != self.name:
-                name = '%s%s%s' % (Exp.RBO[0], name, Exp.RBC[0])
             name = '%s%s%s%s' % (name, Exp.RBO[0], args, Exp.RBC[0])
             return name
         # just mention
-        if name == self.name:
-            return name
-        return '%s%s%s' % (Exp.RBO[0], name, Exp.RBC[0])
+        return name
 
     def _encode_repeat(self):
         if self.repeat is not None:
@@ -373,6 +373,8 @@ class UserDefinedMethod(Method):
             new_var.toward.replace(arg.name, arg)
         new_var.args = args_new
         new_var.repeat = self.repeat
+        new_var.args_min = self.args_min
+        new_var.args_max = self.args_max
         return new_var
 
     def replace(self, name: str, value=None):
@@ -383,10 +385,10 @@ class UserDefinedMethod(Method):
     def encode(self, stack_called=None):
         stack_called = self._ensure_stack_not_none(stack_called)
         name = self.name
-        # has repeat
         args = [self._encode(arg, stack_called) for arg in self.args]
         args += [self._encode(self.toward, stack_called)]
         name = '%s%s%s%s' % (name, Exp.RBO[0], ','.join(args), Exp.RBC[0])
+        # has repeat
         if self.repeat is not None:
             name = '%s%s%s%s%s' % (Exp.RBO[0], name, Exp.MUL[0], self.repeat.encode(stack_called), Exp.RBC[0])
         return name

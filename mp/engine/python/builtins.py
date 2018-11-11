@@ -4,7 +4,7 @@ from mp.engine.python.attribute import np as _np
 _float_to_int = lambda args: [int(arg) for arg in args]
 
 
-@extension.static('array')
+@extension.static('array', fixed=True)
 def method_array(toward, args):
     args = _float_to_int(args.get_values())
     value = _np.zeros(shape=args)

@@ -105,8 +105,12 @@ class Token:
                         var.toward = toward
                         # put into placeholder
                         for arg_to in args:
+                            var.args_max += 1
                             if arg_to.is_required:
                                 graph.set_placeholder(arg_to)
+                                var.args_min += 1
+                                if var.args_min != var.args_max:
+                                    raise SyntaxError(arg_to.symbol)
                     # if user-defined method
                     # or just to call
                     else:

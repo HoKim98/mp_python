@@ -199,17 +199,20 @@ class TokenTree(list):
 
 class Interpreter:
 
-    def __init__(self, dir_process: str = './', plan=None):
+    def __init__(self, dir_process: str = './', plan=None, header_file=None):
         self.dir_process = os.path.abspath(os.path.join(dir_process))
         plan = Plan if plan is None else plan
         self.plan = plan(dir_process, self.code_to_data)
         self._init_builtin_methods(Plan)
         self._init_builtin_methods(self.plan)
+        if header_file is not None:
+            self.execute_script(header_file)
 
     @classmethod
     def add_module(cls, module_func):
-        method_name = module_func.method_name
-        Exp.BUILTINS[method_name] = module_func
+        if hasattr(module_func, 'method_name'):
+            method_name = module_func.method_name
+            Exp.BUILTINS[method_name] = module_func
 
     def code_to_data(self, message: str):
         lines = message.split(Exp.NEXTLINE)
@@ -218,6 +221,12 @@ class Interpreter:
             prefixes, query = self._parser(tokens)
             data = self._semantic_analysis(prefixes, query)
             yield data
+
+    def execute_script(self, path: str):
+        path = os.path.join(path)
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                self(f.read())
 
     def begin_interactive(self, debug=False):
         _interactive(self, debug=debug)
@@ -300,6 +309,13 @@ class Interpreter:
             # indents
             if w in Exp.INDENT:
                 continue
+
+            # exp
+            if w in Exp.ADD + Exp.SUB:
+                if type(object_attr[-1]) is str:
+                    if object_attr[-1].endswith('e') and object_attr[-1][0].isdigit():
+                        object_attr.append(w)
+                        continue
 
             # subjects
             # check operator overlap
