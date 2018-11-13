@@ -47,3 +47,17 @@ class TypeError(BaseError):
 class NotDataError(BaseError):
     def __init__(self, wrong_token: str):
         super().__init__(0x42, '\'%s\' is not Data.' % wrong_token)
+
+
+class WWWNotFound(BaseError):
+    def __init__(self, wrong_path: str):
+        super().__init__(0x50, '[www] \'%s\' is not found.' % wrong_path)
+
+
+class WWWNotInCandidate(BaseError):
+    def __init__(self, wrong_path: str, base_dir: str, candidates):
+        msg = '[www] \'%s\' is not in candidate.' % wrong_path
+        msg += '\nAvailable in %s: ' % base_dir
+        for name in candidates:
+            msg += '\n\t%s.%s' % (base_dir, name)
+        super().__init__(0x51, msg)

@@ -23,17 +23,25 @@ class Plan:
         # self.graph.lock_point = True
         try:
             # (save, delete) files
-            for var_name, var, value in self._get_wait_list(self.graph.ios):
+            for var_name, var, value, value_raw in self._get_wait_list(self.graph.ios):
                 self.io.set(var_name, value)
             # (print) files
-            for var_name, var, value in self._get_wait_list(self.graph.prints):
-                self.print_var(var, value)
+            for var_name, var, value, value_raw in self._get_wait_list(self.graph.prints):
+                self.print_var(var, value_raw)
         # if error : finish
         except BaseError as e:
             self.graph.clean()
             raise e
         self.graph.lock_point = False
         self.graph.clean()
+
+    # find method in builtins
+    @classmethod
+    def find_method(cls, name: str, find_hidden: bool = True):
+        for method in Exp.BUILTINS.values():
+            if method.test(name, find_hidden):
+                return method, method.fixed
+        return None, None
 
     def _get_wait_list(self, wait_list):
         while len(wait_list) > 0:
@@ -42,12 +50,13 @@ class Plan:
             if append:
                 var = self.graph.vars[var_name]
                 value = self._execute_recursive(var)
-                value.get_value()
+                value_raw = value.get_value()
             # delete
             else:
                 var = None
                 value = None
-            yield var_name, var, value
+                value_raw = None
+            yield var_name, var, value, value_raw
 
     # execute recursively along IO
     def _execute_recursive(self, toward: data.Variable):
@@ -70,6 +79,9 @@ class Plan:
         # is view
         if toward.is_view:
             return self._execute_view(toward)
+        # is tuple
+        if toward.is_tuple:
+            return self._execute_tuple(toward)
         # is operator
         if toward.is_operator:
             return self._execute_operator(toward)
@@ -111,7 +123,7 @@ class Plan:
         # unsupported type
         if toward.num_type not in self.ATTR.map_num_type.keys():
             raise SyntaxError(toward.num_type)
-        # create new array object
+        # create new tensor object
         value = self._new_const(toward)
         const = self.ATTR.AttrConst(value)
         return const
@@ -129,21 +141,24 @@ class Plan:
         if toward.op in Exp.IS:
             return self._execute_operator_modify(toward)
         # the others
-        args = self.ATTR.AttrList([toward.sub, toward.obj, toward.step, *toward.args], self._execute_recursive)
+        args = self.ATTR.AttrTuple([toward.sub, toward.obj, toward.step, *toward.args], self._execute_recursive)
         op = self.ATTR.AttrOP(toward.op, args)
         return op
 
     def _execute_indexed(self, toward: data.Indexed):
         sub = self._execute_recursive(toward.sub)
-        args = self.ATTR.AttrList(toward.args, self._execute_recursive)
+        args = self.ATTR.AttrTuple(toward.args, self._execute_recursive)
         op = self.ATTR.AttrIndexed(sub, args)
         return op
 
     def _execute_view(self, toward: data.View):
-        args = self.ATTR.AttrList(toward.args, self._execute_recursive)
+        args = self.ATTR.AttrTuple(toward.args, self._execute_recursive)
         sub = self._execute_recursive(toward.sub)
         op = self.ATTR.AttrView(sub, args)
         return op
+
+    def _execute_tuple(self, toward: data.Tuple):
+        return self.ATTR.AttrTuple(toward.args, self._execute_recursive)
 
     def _execute_method_update_repeat(self, repeat_old, repeat_new):
         if repeat_old is None:
@@ -163,15 +178,10 @@ class Plan:
                 name = toward.name
         # if builtins
         if toward.is_builtins:
-            method = None
-            fixed = None
-            for method in Exp.BUILTINS.values():
-                if method.test(toward.name):
-                    fixed = method.fixed
-                    break
-            args = self.ATTR.AttrList(toward_origin.args, self._execute_recursive)
+            method, fixed = self.find_method(toward.name, find_hidden=False)
+            args = self.ATTR.AttrTuple(toward_origin.args, self._execute_recursive)
             repeat = self._execute_recursive(repeat)
-            return self.ATTR.AttrMethod(name, method, toward_origin, args, fixed, repeat)
+            return self.ATTR.AttrMethod(self, name, method, toward_origin, args, fixed, repeat)
         # if user-defined methods
         if toward.is_method_defined:
             return self._execute_method_defined(toward, name, toward_origin.args, repeat)
@@ -190,9 +200,9 @@ class Plan:
         # check sizeof args
         if toward.args_min > len(args) or toward.args_max < len(args):
             raise TooMuchOrLessArguments(name, toward.args_min, len(args), int(toward.args_min != toward.args_max))
-        args = self.ATTR.AttrList(args, self._execute_recursive)
+        args = self.ATTR.AttrTuple(args, self._execute_recursive)
         # add placeholders
-        placeholders = self.ATTR.AttrList(toward.args, self._execute_recursive)
+        placeholders = self.ATTR.AttrTuple(toward.args, self._execute_recursive)
         # call method
         method = self._execute_recursive(toward.toward)
         method.code = toward.toward.encode()
@@ -224,8 +234,7 @@ class Plan:
             self.graph.pop_self()
             # just script
             if toward.toward is None:
-                var = data.Constant(self.graph.new_name(), 'b', False)
-                return self.ATTR.AttrConst(var)
+                return self.ATTR.AttrConst(False)
             var = self._execute_recursive(toward)
             return var
         # if binary
@@ -247,7 +256,7 @@ class Plan:
 
     @classmethod
     def print_var(cls, var, value):
-        print('%s = %s' % (var.symbol, value.get_value()))
+        print('%s = %s' % (var.symbol, value))
 
     @classmethod
     def get_builtin_methods(cls):

@@ -82,11 +82,11 @@ class Expression:
     # DIR_CURRENT = 'now'
     # DIR_UP = 'up'
 
-    ARRAY = 'array'
-    BUILTINS = {r'^%s$' % ARRAY: NotImplemented, }
+    TENSOR = 'tensor'
+    BUILTINS = {r'^%s$' % TENSOR: NotImplemented, }
 
     EXTENSION_SOURCE = 'mp'
-    EXTENSION_BINARY = 'mpb'
+    EXTENSION_BINARY = 'npy'
 
     Signs = RBO + RBC + ABO + ABC + SBO + SBC + ADD + SUB + MAT + MOD + [DOT, COMMA, COMMENT, BACKSLASH]
     Signs_DoubleSingle = ADD + SUB + MUL + TDIV + MAT + MOD + GT + LT + IS + IDX + EM

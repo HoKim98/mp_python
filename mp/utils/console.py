@@ -1,13 +1,12 @@
 import cmd
-import os
-from platform import system
 
 from mp.core.error import BaseError
+from mp.utils.os_type import is_linux, is_windows
 from mp.version import __version__
 
 
 class _Colors:
-    if 'windows' in system().lower():
+    if is_windows():
         HEADER = ''
         OKBLUE = ''
         OKGREEN = ''
@@ -17,7 +16,7 @@ class _Colors:
         BOLD = ''
         UNDERLINE = ''
     else:
-    #elif 'linux' in system().lower():
+    #elif is_linux():
         HEADER = '\033[95m'
         OKBLUE = '\033[94m'
         OKGREEN = '\033[92m'

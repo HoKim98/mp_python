@@ -6,15 +6,13 @@ from mp.core.expression import Expression as Exp
 
 map_num_type = {
     'b': np.bool,
-    'i8': np.int8,
-    'i16': np.int16,
+    'i8': np.uint8,
     'i32': np.int32,
     'i64': np.int64,
     'f16': np.float16,
     'f32': np.float32,
     'f64': np.float64,
 }
-map_num_type_reversed = {v: k for k, v in map_num_type.items()}
 map_op = {
     tuple(Exp.ADD + Exp.IADD): np.add,
     tuple(Exp.SUB + Exp.ISUB): np.subtract,
@@ -45,7 +43,7 @@ class AttrConst(_attribute.AttrConst):
     pass
 
 
-class AttrList(_attribute.AttrList):
+class AttrTuple(_attribute.AttrTuple):
     ATTR = Attr
 
 
@@ -96,4 +94,4 @@ class AttrIteration(_attribute.AttrIteration):
     CONST = AttrConst
 
 
-attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrView)
+attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrTuple, AttrView)

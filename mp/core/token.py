@@ -118,6 +118,10 @@ class Token:
                         var.args = operands[1:]
                         var.is_data = True
                         var.is_method_delegate = False
+
+                        method_base = self._find_method_base(var.toward)
+                        if method_base.is_method_defined:
+                            self._replace_keywords(method_base.args, var.args)
                     return var
                 # indices
                 return graph.indices(*operands)
@@ -149,6 +153,41 @@ class Token:
         elif self.data_type == self.TYPE_TUPLE:
             operands = self._get_operands(self.args, graph)
             return graph.tuple(*operands)
+
+    @classmethod
+    def _find_method_base(cls, method):
+        while method is not None:
+            if method.toward is None or method.is_method_defined:
+                return method
+            method = method.toward
+        raise NotImplementedError
+
+    @classmethod
+    def _replace_keywords(cls, type_params, real_params):
+        # is placeholder?
+        def check_placeholder(idx):
+            if type_params[idx].toward.is_placeholder:
+                raise SyntaxError(arg_real.symbol)
+
+        # replace from 'idx_from' to 'idx_to' safely
+        def save_replace(idx_from, idx_to):
+            check_placeholder(idx_to)
+            real_params[idx_to] = type_params[idx_from].toward
+
+        # expand list as needed
+        def expand():
+            while len(real_params) <= idx_type:
+                check_placeholder(len(real_params))
+                real_params.append(type_params[len(real_params)].toward)
+
+        # execute replacing
+        for idx_type, arg_type in enumerate(type_params):
+            for idx_real, arg_real in enumerate(real_params):
+                if arg_type.symbol == arg_real.symbol:
+                    tmp = arg_real.toward
+                    save_replace(idx_real, idx_real)
+                    expand()
+                    real_params[idx_type] = tmp
 
     @classmethod
     def _get_operands(cls, args, graph):

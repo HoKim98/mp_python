@@ -202,7 +202,7 @@ class Interpreter:
     def __init__(self, dir_process: str = './', plan=None, header_file=None):
         self.dir_process = os.path.abspath(os.path.join(dir_process))
         plan = Plan if plan is None else plan
-        self.plan = plan(dir_process, self.code_to_data)
+        self.plan = plan(self.dir_process, self.code_to_data)
         self._init_builtin_methods(Plan)
         self._init_builtin_methods(self.plan)
         if header_file is not None:

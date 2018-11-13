@@ -6,16 +6,14 @@ from mp.core.expression import Expression as Exp
 
 map_num_type = {
     # bool-type is not supported
-    'b': torch.float64,
-    'i8': torch.int8,
-    'i16': torch.int16,
+    'b': None,
+    'i8': torch.uint8,
     'i32': torch.int32,
     'i64': torch.int64,
     'f16': torch.float16,
     'f32': torch.float32,
     'f64': torch.float64,
 }
-map_num_type_reversed = {v: k for k, v in map_num_type.items()}
 map_op = {
     tuple(Exp.ADD + Exp.IADD): lambda x, y: x + y,
     tuple(Exp.SUB + Exp.ISUB): lambda x, y: x - y,
@@ -46,7 +44,7 @@ class AttrConst(_attribute.AttrConst):
     pass
 
 
-class AttrList(_attribute.AttrList):
+class AttrTuple(_attribute.AttrTuple):
     ATTR = Attr
 
 
@@ -95,9 +93,11 @@ class AttrIndexed(_attribute.AttrIndexed):
             args[i] = self._assert_int_unit(arg)
         return args
 
-    def _assert_int_unit(self, arg):
+    def _assert_int_unit(cls, arg):
         if arg is None:
             return arg
+        if type(arg) is bool:
+            return int(arg)
         return arg.type(torch.int64)
 
 
@@ -114,4 +114,4 @@ class AttrIteration(_attribute.AttrIteration):
     CONST = AttrConst
 
 
-attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrView)
+attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrTuple, AttrView)

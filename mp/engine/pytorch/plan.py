@@ -1,3 +1,4 @@
+from mp.core.expression import Expression as Exp
 from mp.core.plan import Plan as _Plan
 
 from mp.engine.pytorch import attribute as _attribute
@@ -13,5 +14,7 @@ class Plan(_Plan):
     CLASS_IO = IO
 
     def _new_const(self, toward):
+        if toward.num_type == Exp.BOOL:
+            return bool(toward.value)
         return torch.full((), fill_value=toward.value, device=Device.get(),
                           dtype=self.ATTR.map_num_type[toward.num_type])

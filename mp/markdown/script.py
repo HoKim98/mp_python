@@ -56,7 +56,7 @@ class ScriptWriter(_BaseWriter):
                 if op in Exp.Tokens_In2Out.keys():
                     op = Exp.Tokens_In2Out[op]
                 return '%s %s %s' % (sub, op, obj)
-        if var.is_indices or var.is_tuple:
+        if var.is_indices:
             return self._shell(var, '(', ')')
         if var.is_view:
             return self._shell(var, '{', '}')
@@ -86,6 +86,9 @@ class ScriptWriter(_BaseWriter):
             self._draw_vars(var.args)
             args = [self._encode(arg) for arg in var.args]
             return '%s(%s)' % (sub, ', '.join(args))
+        if var.is_tuple:
+            args = [self._encode(arg) for arg in var.args]
+            return '(%s)' % ', '.join(args)
 
     def _shell(self, var, c_open, c_close):
         sub = ''

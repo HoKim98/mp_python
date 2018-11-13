@@ -6,14 +6,12 @@ from mp.core.expression import Expression as Exp
 map_num_type = {
     'b': NotImplemented,
     'i8': NotImplemented,
-    'i16': NotImplemented,
     'i32': NotImplemented,
     'i64': NotImplemented,
     'f16': NotImplemented,
     'f32': NotImplemented,
     'f64': NotImplemented,
 }
-map_num_type_reversed = {v: k for k, v in map_num_type.items()}
 map_op = {
     tuple(Exp.ADD + Exp.IADD): NotImplemented,
     tuple(Exp.SUB + Exp.ISUB): NotImplemented,
@@ -138,15 +136,16 @@ class AttrConst(Attr):
         return self.value
 
 
-class AttrList:
+class AttrTuple(Attr):
     ATTR = Attr
 
     def __init__(self, args, execute_recursive=None):
+        super().__init__(Exp.TUPLE)
         if execute_recursive is not None:
             args = [execute_recursive(arg) for arg in args]
         self.list = args
 
-    def get_values(self):
+    def get_value(self):
         return [self.ATTR.to_value(arg) for arg in self.list]
 
     def assert_sizeof(self, symbol: str, expected: int, greater_or_less: int = 0):
@@ -157,11 +156,21 @@ class AttrList:
         if greater_or_less < 0 and len(self) > expected:
             raise TooMuchOrLessArguments(symbol, expected, len(self), greater_or_less)
 
-    def __getitem__(self, item):
-        raise NotImplementedError
+    @classmethod
+    def assert_false_to_none(self, value):
+        if value is not None:
+            if type(value) is bool:
+                return None if not value else True
+        return value
 
     def __repr__(self):
-        return repr(self.list)
+        args = []
+        for arg in self.list:
+            if hasattr(arg, 'is_data'):
+                args.append(str(arg.get_value()))
+            else:
+                args.append(str(arg))
+        return '%s%s%s' % (Exp.RBO[0], ', '.join(args), Exp.RBC[0])
 
     def __len__(self):
         return len(self.list)
@@ -192,7 +201,7 @@ class AttrOP(Attr):
                 arg.remove_cache()
 
     def _calculate(self):
-        args = self.args.get_values()
+        args = self.args.get_value()
         if self.op in self.MAP_OP.keys():
             # check type
             args = args[:2]
@@ -226,7 +235,7 @@ class AttrView(AttrOP):
 
     def _calculate(self):
         sub = self.sub.get_value()
-        args = self.args.get_values()
+        args = self.args.get_value()
 
         # dim
         if len(args) == 0:
@@ -268,7 +277,7 @@ class AttrIndexed(AttrOP):
             if sub.is_method and sub.args is None:
                 return self._calculate_method_delegate(sub)
 
-        args = self.args.get_values()
+        args = self.args.get_value()
         # copy object
         if len(args) == 0:
             return self._calculate_copy(sub)
@@ -298,12 +307,14 @@ class AttrIndexed(AttrOP):
 
 
 class AttrMethod(Attr):
-    def __init__(self, name: str, method, toward, args, fixed, repeat=None):
+    def __init__(self, plan, name: str, method, toward, args, fixed, repeat=None):
         super().__init__(name, toward)
         self.is_method = True
         self.method = method
         self.args = args
         self.fixed = fixed
+
+        self.plan = plan
 
         self.code = toward.encode()
         self.repeat = repeat
@@ -333,11 +344,11 @@ class AttrMethod(Attr):
         if self.repeat is not None:
             num_repeat = int(self.repeat.get_value())
             for _ in range(num_repeat):
-                result = self.method.execute(self.toward, self.args)
+                result = self.method.execute(self.toward, self.args, self.plan)
                 result = self._assert_result_not_none(result)
         # else
         else:
-            result = self.method.execute(self.toward, self.args)
+            result = self.method.execute(self.toward, self.args, self.plan)
             result = self._assert_result_not_none(result)
         self.is_data = self.toward.is_data
         return result
@@ -352,7 +363,7 @@ class AttrIteration(AttrMethod):
     CONST = AttrConst
 
     def __init__(self, name: str, method, toward, placeholders, args, repeat=None):
-        super().__init__(name, method, toward, args, False, repeat)
+        super().__init__(None, name, method, toward, args, False, repeat)
         self.placeholders = placeholders
         self.args_bak = None
 
@@ -411,4 +422,4 @@ class AttrDict:
         return Attr(key)
 
 
-attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrView)
+attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrTuple, AttrView)

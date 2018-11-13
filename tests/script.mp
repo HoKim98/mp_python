@@ -29,7 +29,7 @@
     dt = d3 == 6
 
 # INDICES & VIEW
-    e1 = array(3, 4, 5)
+    e1 = tensor(3, 4, 5)
     e2 = e1(:, 2:, 1::2)()
     e3 = e2{}
     e4 = e2{2}

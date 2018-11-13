@@ -1,7 +1,6 @@
 import os
 
 from mp.core.expression import Expression as Exp
-from mp.core.data import Constant
 
 
 class IO:
@@ -43,13 +42,13 @@ class IO:
         elif toward.is_constant:
             path = '%s.%s' % (self.get_path(item), Exp.EXTENSION_BINARY)
             path = os.path.join(self.dir_main, path)
-            self._make_dir_recursive(paths)
+            self.make_dir_recursive(paths, self.dir_main, self.permission)
             self._save_binary(path, toward.get_value())
         # if toward consists of graph
         else:
             path = '%s.%s' % (self.get_path(item), Exp.EXTENSION_SOURCE)
             path = os.path.join(self.dir_main, path)
-            self._make_dir_recursive(paths)
+            self.make_dir_recursive(paths, self.dir_main, self.permission)
             self._save_graph(path, toward.code)
 
     @classmethod
@@ -60,9 +59,8 @@ class IO:
     def _load_binary(cls, name: str, path: str):
         if os.path.exists(path):
             with open(path, 'rb') as f:
-                num_type, value = cls._load_binary_raw(f)
-                const = Constant(name, num_type, value)
-            return const
+                value = cls._load_binary_raw(f)
+            return value
         return None
 
     @classmethod
@@ -109,12 +107,13 @@ class IO:
         path = os.path.join(self.dir_main, path)
         return path
 
-    def _make_dir_recursive(self, paths):
-        path = self.dir_main
+    @classmethod
+    def make_dir_recursive(cls, paths, dir_from=None, permission=0o775):
+        path = dir_from if dir_from is not None else ''
         for dir_name in paths[:-1]:
             path = os.path.join(path, dir_name)
             if not os.path.exists(path):
-                os.mkdir(path, mode=self.permission)
+                os.mkdir(path, mode=permission)
 
     @classmethod
     def get_path(cls, filename, dir_from=None):

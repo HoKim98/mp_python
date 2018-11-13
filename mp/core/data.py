@@ -165,7 +165,7 @@ class Constant(Variable):
         value = str(self.value)
         # boolean to numeric
         if self.num_type == Exp.BOOL:
-            value = '1' if value else '0'
+            value = '1' if self.value else '0'
         # default type
         if self.num_type in Exp.TYPES_DEFAULT:
             return value
