@@ -70,10 +70,14 @@ class Variable:
     @property
     def symbol(self):
         if self.name is not None:
+            # is parameters
+            name = self.name
+            if name.startswith(Exp.CODE_PARAM):
+                return name[name.find('.') + 1:]
             # is constant
-            if self.name.startswith(Exp.CODE_CONST):
+            if name.startswith(Exp.CODE_CONST):
                 return self.toward.symbol
-            return self.name
+            return name
         raise NotImplementedError
 
     def encode(self, stack_called=None):
@@ -81,7 +85,7 @@ class Variable:
         toward = self._encode(self.toward, stack_called)
         if self._name_is_constant():
             return toward
-        name = self.name
+        name = self.symbol
         # if already defined
         if name in stack_called:
             return name
@@ -302,6 +306,7 @@ class Method(Variable):
         sub = super().replace(name, value)
         if not self.is_method_delegate:
             sub.args = [self._replace(arg, name, value) for arg in sub.args]
+            sub.repeat = self._replace(sub.repeat, name, value)
         return sub
 
     def get_real_method(self):

@@ -214,7 +214,7 @@ class Plan:
 
     # find variable from file-system
     def _find_variable(self, toward):
-        name = toward.symbol
+        name = toward.name
         # if not variable
         if name is None:
             raise RequiredError('None')

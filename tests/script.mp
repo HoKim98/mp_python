@@ -40,5 +40,10 @@
     self.f1 = 3.14
     ft = self.f1 == script.f1
 
+# TUPLE
+    g1 = (3, 4)
+    g2, g3 = g1
+    gt = (g2 == 3) * (g3 == 4)
+
 # PRINT
     print at, bt, ct, dt, et, ft

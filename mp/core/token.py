@@ -104,13 +104,24 @@ class Token:
                         var.args = args
                         var.toward = toward
                         # put into placeholder
+                        args_new = []
                         for arg_to in args:
                             var.args_max += 1
+                            # create a parameter
+                            new_name = '%s%s%s%s' % (Exp.CODE_PARAM, graph.new_name()[1:], Exp.DOT, arg_to.symbol)
+                            new_var = graph.find(new_name)
+                            new_var.toward = arg_to.toward
+                            # replace from global variable
+                            args_new.append(new_var)
+                            var.toward.replace(arg_to.symbol, new_var)
+                            arg_to = new_var
+                            # if required
                             if arg_to.is_required:
                                 graph.set_placeholder(arg_to)
                                 var.args_min += 1
                                 if var.args_min != var.args_max:
                                     raise SyntaxError(arg_to.symbol)
+                        var.args = args_new
                     # if user-defined method
                     # or just to call
                     else:

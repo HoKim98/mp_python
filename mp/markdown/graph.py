@@ -37,6 +37,12 @@ class GraphWriter(_BaseWriter):
                 self(self._edge(var))
         elif var.is_constant:
             pass
+        elif var.is_tuple:
+            args = [None] * 4 + list(var.args)
+            for idx, arg in enumerate(args):
+                if arg is not None:
+                    self._draw_var(arg)
+                    self(self._node(arg, var, idx))
         elif var.is_operator or var.is_method:
             args = [var.sub, var.obj, var.step, var.repeat] + list(var.args)
             for idx, arg in enumerate(args):

@@ -78,6 +78,7 @@ class Expression:
     CODE_CONST = '/'
     CODE_PLACEHOLDER = '__placeholder__'
     CODE_SELF = 'self%s' % DOT
+    CODE_PARAM = '$'
 
     # DIR_CURRENT = 'now'
     # DIR_UP = 'up'

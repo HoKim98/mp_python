@@ -1,13 +1,14 @@
 from hurry.filesize import size as _size
-from mp.core.io import IO
-from mp.utils.os_type import is_windows, is_linux
 
 from mp.core import extension as _ext
 from mp.core.expression import Expression as Exp
 from mp.core.error import WWWNotFound
+from mp.core.io import IO
 
 from mp.engine.python.attribute import map_num_type
 from mp.engine.python.attribute import np as _np
+
+from mp.utils.os_type import is_windows, is_linux
 
 import gzip
 import os
