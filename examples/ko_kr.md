@@ -186,13 +186,14 @@ b = 243
 단, 띄워쓰기는 변수명에서 무시됩니다.
 ```
 @ my house = 3
+@ myhouse = 4
 @ my cat's year = 2.9
 @ 
-@ # my house는 myhouse와 같습니다.
+@ # my house는 myhouse와 다릅니다.
 @ print myhouse, my cat's year
 
-myhouse = 3
-mycat'syear = 2.9
+myhouse = 4
+my cat's year = 2.9
 ```
 <a name="ch4-2"></a>
 ### 디렉토리 형식의 변수명

@@ -13,4 +13,5 @@
 # Optimizers
     Adam = def(_lr = 1e-3, __optim_adam(_lr))
 
+# Train or Test
     step = def(_optim, _loss, __optim_step(_optim, _loss))

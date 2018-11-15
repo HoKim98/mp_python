@@ -1,3 +1,4 @@
 hurry.filesize
 numpy
 paramiko
+requests

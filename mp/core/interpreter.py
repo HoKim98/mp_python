@@ -92,6 +92,7 @@ class TokenTree(list):
                         continue
                 break
             tokens = token_cat.split(Exp.DOT)
+            tokens = [token.strip() for token in tokens]
             new_object = TokenTree(self, Exp.VARIABLE)
             new_object += tokens
             self.append(new_object)
@@ -308,6 +309,14 @@ class Interpreter:
 
             # indents
             if w in Exp.INDENT:
+                if object_attr.head == Exp.VARIABLE:
+                    # start with character
+                    if len(object_attr) > 0:
+                        object_attr.append(w)
+                elif len(object_attr) > 0:
+                    # start with character
+                    if type(object_attr[-1]) is str:
+                        object_attr.append(w)
                 continue
 
             # exp

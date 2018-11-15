@@ -2,6 +2,5 @@ include envs.txt
 include LICENSE
 include README.md
 include requirements.txt
-include requests
 
 prune mp_gui*
