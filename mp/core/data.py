@@ -193,7 +193,7 @@ class Operator(Variable):
         self.step = step
 
     def has_attr(self, name: str):
-        args = [self.sub, self.obj, self.step]
+        args = [self.sub, self.obj, self.step] + list(self.args)
         for arg in args:
             if arg is not None:
                 if arg.has_attr(name):

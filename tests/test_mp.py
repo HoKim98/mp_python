@@ -51,6 +51,11 @@ def test_pytorch():
     _test_specific_interpreter_run_mnist(interpreter)
 
 
+def test_pytorch_mnist():
+    interpreter = PyTorchInterpreter(_curdir())
+    _test_specific_interpreter_run_mnist(interpreter)
+
+
 def test_remote():
     interpreter = RemoteInterpreter(_curdir())
     pass
@@ -59,4 +64,5 @@ def test_remote():
 if __name__ == '__main__':
     test_python()
     test_pytorch()
+    test_pytorch_mnist()
     test_remote()
