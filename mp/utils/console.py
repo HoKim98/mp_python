@@ -1,7 +1,7 @@
 import cmd
 
 from mp.core.error import BaseError
-from mp.utils.os_type import is_linux, is_windows
+from mp.utils.environment import is_linux, is_windows
 from mp.version import __version__
 
 

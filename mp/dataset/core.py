@@ -8,7 +8,7 @@ from mp.core.io import IO
 from mp.engine.python.attribute import map_num_type
 from mp.engine.python.attribute import np as _np
 
-from mp.utils.os_type import is_windows, is_linux
+from mp.utils.environment import is_windows, is_linux
 
 import gzip
 import os

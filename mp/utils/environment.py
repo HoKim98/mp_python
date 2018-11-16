@@ -1,3 +1,4 @@
+import sys
 from platform import system
 
 
@@ -11,3 +12,11 @@ def is_windows():
 
 def is_linux():
     return 'linux' in _get_os()
+
+
+def get_python_version():
+    return '%s.%s' % (sys.version_info.major, sys.version_info.minor)
+
+
+def get_os():
+    return _get_os()

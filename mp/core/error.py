@@ -61,3 +61,12 @@ class WWWNotInCandidate(BaseError):
         for name in candidates:
             msg += '\n\t%s.%s' % (base_dir, name)
         super().__init__(0x51, msg)
+
+
+class NotInCandidate(BaseError):
+    def __init__(self, wrong_path: str, base_dir: str, candidates):
+        msg = '[www] \'%s\' is not in candidate.' % wrong_path
+        msg += '\nAvailable in %s: ' % base_dir
+        for name in candidates:
+            msg += '\n\t%s' % name
+        super().__init__(0x51, msg)
