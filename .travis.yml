@@ -16,9 +16,9 @@ install:
   - pip install -r requirements.txt
   - python setup.py sdist
   - pip install dist/*.tar.gz
-  - `python -m mp.utils.dependency`
 
 script:
+  - $(python -m mp.utils.dependency)
   - cd tests
   - pytest --cov=mp
 
