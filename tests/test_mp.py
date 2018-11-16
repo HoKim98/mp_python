@@ -5,8 +5,14 @@ from mp import RemoteInterpreter
 from mp.markdown import draw_graph, draw_script
 from mp.dataset import core
 
-PATH_SCRIPT = 'script'
+SCRIPT = 'save script'
+SCRIPT_METHOD = 'save script_method'
+SCRIPT_MNIST = 'save script_mnist'
 core.FIXED_TTY_WIDTH = True
+
+# --------------------------------------------------------------------------
+#             METHOD
+# --------------------------------------------------------------------------
 
 
 def _curdir():
@@ -25,44 +31,42 @@ def _test(interpreter):
         code += 1
 
 
-def _test_specific_interpreter(interpreter):
-    interpreter('save %s' % PATH_SCRIPT)
+def _test_markdown(interpreter):
+    draw_graph(interpreter.plan.graph)
+    draw_script(interpreter.plan.graph)
+
+
+def _test_specific_interpreter(interpreter, script):
+    interpreter(script)
     _test(interpreter)
+    _test_markdown(interpreter)
 
-    draw_graph(interpreter.plan.graph)
-    draw_script(interpreter.plan.graph)
-
-
-def _test_specific_interpreter_run_mnist(interpreter):
-    interpreter.execute_script('script_mnist.mp')
-
-    draw_graph(interpreter.plan.graph)
-    draw_script(interpreter.plan.graph)
+# --------------------------------------------------------------------------
+#             TEST
+# --------------------------------------------------------------------------
 
 
 def test_python():
     interpreter = PythonInterpreter(_curdir())
-    _test_specific_interpreter(interpreter)
+    _test_specific_interpreter(interpreter, SCRIPT)
 
 
 def test_pytorch():
     interpreter = PyTorchInterpreter(_curdir())
-    _test_specific_interpreter(interpreter)
-    _test_specific_interpreter_run_mnist(interpreter)
+    _test_specific_interpreter(interpreter, SCRIPT)
+
+
+def test_pytorch_method():
+    interpreter = PyTorchInterpreter(_curdir())
+    _test_specific_interpreter(interpreter, SCRIPT_METHOD)
 
 
 def test_pytorch_mnist():
     interpreter = PyTorchInterpreter(_curdir())
-    _test_specific_interpreter_run_mnist(interpreter)
+    interpreter(SCRIPT_MNIST)
+    _test_markdown(interpreter)
 
 
 def test_remote():
     interpreter = RemoteInterpreter(_curdir())
     pass
-
-
-if __name__ == '__main__':
-    test_python()
-    test_pytorch()
-    test_pytorch_mnist()
-    test_remote()

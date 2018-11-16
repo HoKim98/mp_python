@@ -20,12 +20,11 @@ def method_reduce_min(toward, args, plan):
 def method_reduce_sum(toward, args, plan):
     args.assert_sizeof(toward.symbol, 1, +1)
     x, *dim = args.get_value()
-    dim = dim[0] if len(dim) > 0 else None
-    return _torch.sum(x, dim)
+    return _torch.sum(x, *dim)
 
 
 @_ext.static('mean')
-def method_reduce_min(toward, args, plan):
+def method_reduce_mean(toward, args, plan):
     args.assert_sizeof(toward.symbol, 1, +1)
     x, *dim = args.get_value()
     return _torch.mean(x, *dim)

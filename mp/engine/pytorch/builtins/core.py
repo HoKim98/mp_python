@@ -43,3 +43,11 @@ def method_float(toward, args, plan):
     x, = args.get_value()
     x = x.float()
     return x
+
+
+@_ext.static('long')
+def method_long(toward, args, plan):
+    args.assert_sizeof(toward.symbol, 1)
+    x, = args.get_value()
+    x = x.long()
+    return x
