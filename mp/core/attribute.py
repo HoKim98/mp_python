@@ -368,7 +368,8 @@ class AttrIteration(AttrMethod):
         self.args_bak = None
 
     def remove_cache(self):
-        for arg in self.args.list:
+        self.method.remove_cache()
+        for arg in self.placeholders.list + self.args.list:
             if arg is not None:
                 arg.remove_cache()
 

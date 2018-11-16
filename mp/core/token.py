@@ -81,12 +81,7 @@ class Token:
                 return None
             # slice
             elif self.name in Exp.IDX:
-                start = operands[0]
-                stop = operands[1] if len(operands) >= 2 else None
-                step = operands[2] if len(operands) == 3 else None
-                start = start if bool(start) else None
-                stop = stop if bool(stop) else None
-                return graph.slice(start, stop, step)
+                return self._index(operands, graph)
             # view
             elif self.name in Exp.SHELL_AA:
                 return graph.view(*operands)
@@ -95,45 +90,12 @@ class Token:
                 # call method
                 sub = operands[0]
                 if sub.is_method_delegate:
-                    # if user-defined method delegate
+                    # if user-defined method
                     if sub.is_method_defined and sub.toward is None:
-                        var = sub
-                        if len(operands) == 1:
-                            raise SyntaxError(var.name)
-                        args, toward = operands[1:-1], operands[-1]
-                        var.args = args
-                        var.toward = toward
-                        # put into placeholder
-                        args_new = []
-                        for arg_to in args:
-                            var.args_max += 1
-                            # create a parameter
-                            new_name = '%s%s%s%s' % (Exp.CODE_PARAM, graph.new_name()[1:], Exp.DOT, arg_to.symbol)
-                            new_var = graph.find(new_name)
-                            new_var.toward = arg_to.toward
-                            # replace from global variable
-                            args_new.append(new_var)
-                            var.toward.replace(arg_to.symbol, new_var)
-                            arg_to = new_var
-                            # if required
-                            if arg_to.is_required:
-                                graph.set_placeholder(arg_to)
-                                var.args_min += 1
-                                if var.args_min != var.args_max:
-                                    raise SyntaxError(arg_to.symbol)
-                        var.args = args_new
+                        return self._user_defined_method(sub, operands, graph)
                     # if user-defined method
                     # or just to call
-                    else:
-                        var = graph.point_method(graph.new_name(), sub)
-                        var.args = operands[1:]
-                        var.is_data = True
-                        var.is_method_delegate = False
-
-                        method_base = self._find_method_base(var.toward)
-                        if method_base.is_method_defined:
-                            self._replace_keywords(method_base.args, var.args)
-                    return var
+                    return self._call_method(sub, operands, graph)
                 # indices
                 return graph.indices(*operands)
             # if repeat call
@@ -141,13 +103,7 @@ class Token:
                 # repeat call
                 sub = operands[0]
                 if sub.is_method_delegate:
-                    var = graph.point_method(graph.new_name(), sub)
-                    repeat = operands[1]
-                    # double multiply
-                    if var.repeat is not None:
-                        repeat = graph.operate(self.name, var.repeat, repeat)
-                    var.repeat = repeat
-                    return var
+                    return self._repeat_call(sub, operands, graph)
                 # normal multiply
                 else:
                     return graph.operate(self.name, *operands)
@@ -164,6 +120,53 @@ class Token:
         elif self.data_type == self.TYPE_TUPLE:
             operands = self._get_operands(self.args, graph)
             return graph.tuple(*operands)
+
+    def _user_defined_method(self, sub, operands, graph):
+        var = sub
+        if len(operands) == 1:
+            raise SyntaxError(var.name)
+        args, toward = operands[1:-1], operands[-1]
+        var.toward = toward
+        # put into placeholder
+        args_new = []
+        for arg_to in args:
+            var.args_max += 1
+            # create a parameter
+            new_var = self._new_parameter(arg_to, graph)
+            # replace from global variable
+            args_new.append(new_var)
+            var.toward.replace(arg_to.symbol, new_var)
+            arg_to = new_var
+            # if required
+            if arg_to.is_required:
+                graph.set_placeholder(arg_to)
+                var.args_min += 1
+                if var.args_min != var.args_max:
+                    raise SyntaxError(arg_to.symbol)
+        var.args = args_new
+        if var.toward.is_variable:
+            var.toward = self._new_parameter(var.toward, graph)
+        return var
+
+    def _call_method(self, sub, operands, graph):
+        var = graph.point_method(graph.new_name(), sub)
+        var.args = operands[1:]
+        var.is_data = True
+        var.is_method_delegate = False
+        # if method defined
+        method_base = self._find_method_base(var.toward)
+        if method_base.is_method_defined:
+            self._replace_keywords(method_base.args, var.args)
+        return var
+
+    def _repeat_call(self, sub, operands, graph):
+        var = graph.point_method(graph.new_name(), sub)
+        repeat = operands[1]
+        # double multiply
+        if var.repeat is not None:
+            repeat = graph.operate(self.name, var.repeat, repeat)
+        var.repeat = repeat
+        return var
 
     @classmethod
     def _find_method_base(cls, method):
@@ -199,6 +202,22 @@ class Token:
                     save_replace(idx_real, idx_real)
                     expand()
                     real_params[idx_type] = tmp
+
+    @classmethod
+    def _new_parameter(cls, var, graph):
+        new_name = '%s%s%s%s' % (Exp.CODE_PARAM, graph.new_name()[1:], Exp.DOT, var.symbol)
+        new_var = graph.find(new_name)
+        new_var.toward = var.toward
+        return new_var
+
+    @classmethod
+    def _index(cls, operands, graph):
+        start = operands[0]
+        stop = operands[1] if len(operands) >= 2 else None
+        step = operands[2] if len(operands) == 3 else None
+        start = start if bool(start) else None
+        stop = stop if bool(stop) else None
+        return graph.slice(start, stop, step)
 
     @classmethod
     def _get_operands(cls, args, graph):

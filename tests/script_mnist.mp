@@ -1,5 +1,8 @@
-    mean absolute error = def(_x, mean(__abs(_x)))
-    mean square error = def(_x, mean((_x - 0.) ** 2.))
+    _y = mean(__abs(_x))
+    mean absolute error = def(_x, _y)
+
+    _y = mean((_x - 0.) ** 2.)
+    mean square error = def(_x, _y)
 
     train x = float(www.mnist.train.images)(:100) / 255.
     train y = float(www.mnist.train.labels)
