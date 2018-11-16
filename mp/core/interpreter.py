@@ -224,7 +224,7 @@ class Interpreter:
             yield data
 
     def execute_script(self, path: str):
-        path = os.path.join(path)
+        path = os.path.join(self.dir_process, path)
         if os.path.exists(path):
             with open(path, 'r') as f:
                 self(f.read())

@@ -8,7 +8,7 @@ from mp.core.io import IO
 from mp.engine.python.attribute import map_num_type
 from mp.engine.python.attribute import np as _np
 
-from mp.utils.environment import is_windows, is_linux
+from mp.utils.environment import is_linux
 
 import gzip
 import os
@@ -16,13 +16,18 @@ import requests
 import sys
 
 CHUNK_SIZE = 4096
+DEFAULT_TTY_WIDTH = 80
+FIXED_TTY_WIDTH = False
 
 
 def _get_width():
-    if is_windows():
-        return 80
-    #elif is_linux():
-    return int(os.popen('stty size', 'r').read().split()[1])
+    if is_linux and not FIXED_TTY_WIDTH:
+        size = os.popen('stty size', 'r').read().split()
+        # default value
+        if len(size) == 0:
+            return DEFAULT_TTY_WIDTH
+        return int(os.popen('stty size', 'r').read().split()[1])
+    return DEFAULT_TTY_WIDTH
 
 
 def _www_download(name: str, url: str, filename: str):
