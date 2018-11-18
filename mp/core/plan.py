@@ -2,6 +2,7 @@ from mp.core import attribute as _attribute
 from mp.core import builtins as _builtins
 from mp.core import data
 from mp.core.error import BaseError, RequiredError, TooMuchOrLessArguments
+from mp.core.event import Event
 from mp.core.expression import Expression as Exp
 from mp.core.graph import Graph
 from mp.core.io import IO
@@ -17,6 +18,8 @@ class Plan:
         self.attr = self.ATTR.AttrDict()
         self.io = self.CLASS_IO(dir_process)
         self.graph = Graph()
+        # Manages events for built-in methods.
+        self.event = Event()
 
     # execute along IO
     def execute(self):

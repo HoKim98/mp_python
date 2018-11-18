@@ -32,13 +32,8 @@ OFFSET_MNIST = {
 }
 
 
-@_ext.header(BASE_DIR, hidden=True)
-def method_dataset_mnist(toward, args, plan):
-    name = str(toward)
-    filename = name.split('%s.' % BASE_DIR)[1]
-    if filename not in SHAPE_MNIST:
-        raise WWWNotInCandidate(name, BASE_DIR, MAP_MNIST.keys())
-
+@_ext.dataset(BASE_DIR, MAP_MNIST.keys())
+def method_dataset_mnist(name, filename, plan):
     url = MAP_MNIST[filename]
     path = _www(url, BASE_DIR, filename, FILE_TYPE, plan)
     shape = SHAPE_MNIST[filename]

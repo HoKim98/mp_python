@@ -148,6 +148,11 @@ class AttrTuple(Attr):
     def get_value(self):
         return [self.ATTR.to_value(arg) for arg in self.list]
 
+    def remove_cache(self):
+        for arg in self.list:
+            if arg is not None:
+                arg.remove_cache()
+
     def assert_sizeof(self, symbol: str, expected: int, greater_or_less: int = 0):
         if greater_or_less == 0 and len(self) != expected:
             raise TooMuchOrLessArguments(symbol, expected, len(self), greater_or_less)
@@ -325,7 +330,7 @@ class AttrMethod(Attr):
 
     @property
     def reusable(self):
-        return False
+        return super().reusable and self.fixed
 
     def remove_cache(self):
         if self.args is not None and not self.fixed:

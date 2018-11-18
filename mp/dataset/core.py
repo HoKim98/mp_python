@@ -2,7 +2,7 @@ from hurry.filesize import size as _size
 
 from mp.core import extension as _ext
 from mp.core.expression import Expression as Exp
-from mp.core.error import WWWNotFound
+from mp.core.error import WWWNotFound, WWWNotInCandidate
 from mp.core.io import IO
 
 from mp.engine.python.attribute import map_num_type
@@ -91,10 +91,14 @@ def decompress(name: str, path: str, filetype: str, num_type: str, shape=None, o
 
 @_ext.header('www', fixed=True)
 def method_extern_www(toward, args, plan):
-    name = str(toward)
+    name = str(toward).replace(Exp.SHELL_RR[0], '')
     method, _ = plan.find_method(name)
     if method is not None:
         # must be hidden
         if method.hidden:
-            return method.execute(toward, args, plan)
+            # must be in candidate
+            filename = name.split('%s.' % method.base_dir)[1]
+            if filename not in method.candidates:
+                raise WWWNotInCandidate(name, method.base_dir, method.candidates)
+            return method.execute_external(name, filename, plan)
     raise WWWNotFound(name)

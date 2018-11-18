@@ -20,6 +20,14 @@ class extension:
         regex = r'^%s[.].*' % var_name
         return _ExtensionWrapper(regex, fixed, hidden)
 
+    # For custom dataset
+    @classmethod
+    def dataset(cls, header: str, candidates):
+        method = cls.header(header, fixed=True, hidden=True)
+        method.base_dir = header
+        method.candidates = candidates
+        return method
+
 
 class _ExtensionWrapper:
     def __init__(self, regex: str, fixed: bool, hidden: bool):
@@ -46,6 +54,9 @@ class _ExtensionWrapper:
 
     def execute(self, toward, args, plan):
         return self._method(toward, args, plan)
+
+    def execute_external(self, *args, **kwargs):
+        return self._method(*args, **kwargs)
 
     def __call__(self, method):
         self._method = method
