@@ -48,7 +48,7 @@ class Plan:
 
     def _get_wait_list(self, wait_list):
         while len(wait_list) > 0:
-            var_name, append = wait_list.popitem()
+            var_name, append = wait_list.popitem(last=False)
             # save
             if append:
                 var = self.graph.vars[var_name]
@@ -79,6 +79,9 @@ class Plan:
         # is slicing
         if toward.is_indices:
             return self._execute_indexed(toward)
+        # is transpose
+        if toward.is_transpose:
+            return self._execute_transpose(toward)
         # is view
         if toward.is_view:
             return self._execute_view(toward)
@@ -149,15 +152,18 @@ class Plan:
         return op
 
     def _execute_indexed(self, toward: data.Indexed):
-        sub = self._execute_recursive(toward.sub)
-        args = self.ATTR.AttrTuple(toward.args, self._execute_recursive)
-        op = self.ATTR.AttrIndexed(sub, args)
-        return op
+        return self._execute_shell(toward, self.ATTR.AttrIndexed)
 
-    def _execute_view(self, toward: data.View):
-        args = self.ATTR.AttrTuple(toward.args, self._execute_recursive)
+    def _execute_transpose(self, toward: data.Transpose):
+        return self._execute_shell(toward, self.ATTR.AttrTranspose)
+
+    def _execute_view(self, toward: data.Transpose):
+        return self._execute_shell(toward, self.ATTR.AttrView)
+
+    def _execute_shell(self, toward: data.Shell, attribute_type):
         sub = self._execute_recursive(toward.sub)
-        op = self.ATTR.AttrView(sub, args)
+        args = self.ATTR.AttrTuple(toward.args, self._execute_recursive)
+        op = attribute_type(sub, args)
         return op
 
     def _execute_tuple(self, toward: data.Tuple):

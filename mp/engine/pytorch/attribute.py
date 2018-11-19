@@ -55,7 +55,7 @@ class AttrOP(_attribute.AttrOP):
         return slice(*args)
 
 
-class AttrView(_attribute.AttrView):
+class AttrTranspose(_attribute.AttrTranspose):
     @classmethod
     def _calculate_dim(cls, sub):
         return sub.dim()
@@ -64,13 +64,13 @@ class AttrView(_attribute.AttrView):
     def _calculate_sizeof(cls, sub, axis):
         return sub.shape[axis]
 
-    def _calculate_view(self, sub, args):
+    def _calculate_transpose(self, sub, args):
         return sub.transpose(*args)
 
 
 class AttrIndexed(_attribute.AttrIndexed):
     def _calculate_dim(self, sub):
-        return AttrView._calculate_dim(sub)
+        return AttrTranspose._calculate_dim(sub)
 
     def _calculate_copy(self, sub):
         return sub.clone()
@@ -93,12 +93,18 @@ class AttrIndexed(_attribute.AttrIndexed):
             args[i] = self._assert_int_unit(arg)
         return args
 
+    @classmethod
     def _assert_int_unit(cls, arg):
         if arg is None:
             return arg
         if type(arg) is bool:
             return int(arg)
         return arg.type(torch.int64)
+
+
+class AttrView(_attribute.AttrView):
+    def _calculate_view(self, sub, args):
+        return sub.view(*args)
 
 
 class AttrMethod(_attribute.AttrMethod):
@@ -114,4 +120,4 @@ class AttrIteration(_attribute.AttrIteration):
     CONST = AttrConst
 
 
-attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrTuple, AttrView)
+attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrTranspose, AttrTuple, AttrView)

@@ -1,4 +1,5 @@
 from hurry.filesize import size as _size
+from tqdm import tqdm
 
 from mp.core import extension as _ext
 from mp.core.expression import Expression as Exp
@@ -30,37 +31,47 @@ def _get_width():
     return DEFAULT_TTY_WIDTH
 
 
+class ContentLoader:
+    def __init__(self, url: str):
+        self.url = url
+        self.response = requests.get(url, stream=True)
+        # get content length
+        self._total_length = self.response.headers.get('content-length')
+        self._total_length = None if self._total_length is None else int(self._total_length)
+        # iteration
+        self._iter = self.response.iter_content(chunk_size=CHUNK_SIZE)
+        self._tqdm = tqdm(unit_divisor=1024, unit_scale=True, total=len(self))
+
+    def __next__(self):
+        try:
+            data = next(self._iter)
+            self._tqdm.update(len(data))
+            return data
+        except StopIteration as e:
+            self._close()
+            raise e
+
+    def __len__(self):
+        return self._total_length
+
+    def __iter__(self):
+        return self
+
+    def _close(self):
+        self._tqdm.close()
+
+
 def _www_download(name: str, url: str, filename: str):
     """
         Referred from https://stackoverflow.com/questions/566746/how-to-get-linux-console-window-width-in-python
     """
 
     print('[www] Downloading %s' % name)
-    response = requests.get(url, stream=True)
-    total_length = response.headers.get('content-length')
+    loader = ContentLoader(url)
 
     with open(os.path.join(filename), 'wb') as f:
-        # no content length header
-        if total_length is None:
-            f.write(response.content)
-        # has content length header
-        else:
-            downloaded_length = 0
-            total_length = int(total_length)
-            print('[www] Total Size: %s' % _size(total_length))
-            for data in response.iter_content(chunk_size=CHUNK_SIZE):
-                downloaded_length += len(data)
-                f.write(data)
-                # update ratio
-                ratio = str(int(downloaded_length / total_length * 100))
-                # update downloaded file size
-                filesize = '%s/%s' % (_size(downloaded_length), _size(total_length))
-                # update progress bar
-                bar_size = _get_width() - len(ratio) - len(filesize) - 6
-                pointer = int(bar_size * downloaded_length / total_length)
-                sys.stdout.write('\r|%s>%s| %s %s%%' % ('-' * pointer, ' ' * (bar_size - pointer), filesize, ratio))
-                sys.stdout.flush()
-            print()
+        for data in loader:
+            f.write(data)
 
 
 def www(url: str, dataset_dir: str, filename: str, filetype: str, plan, force: bool = False):

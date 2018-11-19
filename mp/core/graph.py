@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from mp.core.data import *
 from mp.core.error import RequiredError, SyntaxError
 from mp.core.expression import Expression as Exp
@@ -12,9 +14,9 @@ class Graph:
         # variables
         self.vars = dict()
         # save/delete files sometime
-        self.ios = dict()
+        self.ios = OrderedDict()
         # print files sometime
-        self.prints = dict()
+        self.prints = OrderedDict()
         # do not make pointer
         self.lock_point = False
         # point self
@@ -349,7 +351,8 @@ class Graph:
 
     # cleanup io requests
     def clean(self):
-        self.ios = dict()
+        self.ios = OrderedDict()
+        self.prints = OrderedDict()
 
     # (:, :, ...)
     @classmethod
@@ -357,6 +360,11 @@ class Graph:
         return Indexed(*args)
 
     # {}
+    @classmethod
+    def transpose(cls, *args):
+        return Transpose(*args)
+
+    # []
     @classmethod
     def view(cls, *args):
         return View(*args)

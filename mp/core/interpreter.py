@@ -200,7 +200,7 @@ class TokenTree(list):
 
 class Interpreter:
 
-    def __init__(self, dir_process: str = './', plan=None, header_file=None):
+    def __init__(self, dir_process: str = './', plan=None, header_file=None, *args, **kwargs):
         self.dir_process = os.path.abspath(os.path.join(dir_process))
         plan = Plan if plan is None else plan
         self.plan = plan(self.dir_process, self.code_to_data)

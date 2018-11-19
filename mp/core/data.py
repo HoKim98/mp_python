@@ -21,6 +21,7 @@ class Variable:
         self.is_constant = False
         self.is_operator = False
         self.is_indices = False
+        self.is_transpose = False
         self.is_view = False
         self.is_tuple = False
         self.is_method = False
@@ -239,45 +240,44 @@ class Operator(Variable):
         return '%s%s%s' % (start, stop, step)
 
 
-class Indexed(Operator):
+class Shell(Operator):
 
-    def __init__(self, sub, *indices):
-        super().__init__(Exp.SHELL_RR[0], Required())
-        self.is_indices = True
+    def __init__(self, sub, op, bracket_open, bracket_close, *indices):
+        super().__init__(op, Required())
         self.sub = sub
+        self.bracket_open = bracket_open
+        self.bracket_close = bracket_close
         self.args = indices
 
     def encode(self, stack_called=None):
         stack_called = self._ensure_stack_not_none(stack_called)
+        sub = self._encode(self.sub, stack_called) if self.sub is not None else ''
         args = [self._encode(arg, stack_called) for arg in self.args]
-        return '%s%s%s%s' % (self._encode(self.sub, stack_called), Exp.RBO[0], Exp.COMMA.join(args), Exp.RBC[0])
+        return '%s%s%s%s' % (sub, self.bracket_open, Exp.COMMA.join(args), self.bracket_close)
 
 
-class View(Operator):
+class Indexed(Shell):
+    def __init__(self, sub, *indices):
+        super().__init__(sub, Exp.SHELL_RR[0], Exp.RBO[0], Exp.RBC[0], *indices)
+        self.is_indices = True
 
+
+class Transpose(Shell):
     def __init__(self, sub, *dims):
-        super().__init__(Exp.SHELL_AA[0], Required())
+        super().__init__(sub, Exp.SHELL_AA[0], Exp.ABO[0], Exp.ABC[0], *dims)
+        self.is_transpose = True
+
+
+class View(Shell):
+    def __init__(self, sub, *dims):
+        super().__init__(sub, Exp.SHELL_SS[0], Exp.SBO[0], Exp.SBC[0], *dims)
         self.is_view = True
-        self.sub = sub
-        self.args = dims
-
-    def encode(self, stack_called=None):
-        stack_called = self._ensure_stack_not_none(stack_called)
-        args = [self._encode(arg, stack_called) for arg in self.args]
-        return '%s%s%s%s' % (self._encode(self.sub, stack_called), Exp.ABO[0], Exp.COMMA.join(args), Exp.ABC[0])
 
 
-class Tuple(Operator):
-
+class Tuple(Shell):
     def __init__(self, *args):
-        super().__init__(Exp.TUPLE, Required())
+        super().__init__(None, Exp.TUPLE, Exp.RBO[0], Exp.RBC[0], *args)
         self.is_tuple = True
-        self.args = args
-
-    def encode(self, stack_called=None):
-        stack_called = self._ensure_stack_not_none(stack_called)
-        args = [self._encode(arg, stack_called) for arg in self.args]
-        return '%s%s%s' % (Exp.RBO[0], Exp.COMMA.join(args), Exp.RBC[0])
 
 
 class Method(Variable):

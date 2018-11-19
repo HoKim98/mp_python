@@ -82,9 +82,9 @@ class Token:
             # slice
             elif self.name in Exp.IDX:
                 return self._index(operands, graph)
-            # view
+            # transpose
             elif self.name in Exp.SHELL_AA:
-                return graph.view(*operands)
+                return graph.transpose(*operands)
             # call method or indices
             elif self.name in Exp.SHELL_RR:
                 # call method
@@ -98,6 +98,9 @@ class Token:
                     return self._call_method(sub, operands, graph)
                 # indices
                 return graph.indices(*operands)
+            # view
+            elif self.name in Exp.SHELL_SS:
+                return graph.view(*operands)
             # if repeat call
             elif self.name in Exp.MUL:
                 # repeat call

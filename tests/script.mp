@@ -28,13 +28,19 @@
     d3 = if(d1 == d2, 5, 6)
     dt = d3 == 6
 
-# INDICES & VIEW
+# INDICES & TRANSPOSE & VIEW
     e1 = tensor(3, 4, 5)
+
     e2 = e1(:, 2:, 1::2)()
+
     e3 = e2{}
     e4 = e2{2}
     e5 = e1{1, 0}{0}
-    et = (e3 == 3) * (e4 == 2) * (e5 == 4)
+
+    e6 = e2[6, 2]
+    e7 = e6{0} + e6{1}
+
+    et = (e3 == 3) * (e4 == 2) * (e5 == 4) * (e7 == 8)
 
 # SELF
     self.f1 = 3.14

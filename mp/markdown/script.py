@@ -58,8 +58,10 @@ class ScriptWriter(_BaseWriter):
                 return '%s %s %s' % (sub, op, obj)
         if var.is_indices:
             return self._shell(var, '(', ')')
-        if var.is_view:
+        if var.is_transpose:
             return self._shell(var, '{', '}')
+        if var.is_view:
+            return self._shell(var, '[', ']')
         if var.is_method_defined:
             sub = var.name
             self._draw_vars(var.args + [var.toward])

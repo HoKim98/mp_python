@@ -25,7 +25,7 @@ HEADER = '''
 
 class Interpreter(_Interpreter):
 
-    def __init__(self, dir_process: str = './', use_cuda: bool = False):
+    def __init__(self, dir_process: str = './', use_cuda: bool = False, *args, **kwargs):
         Device(use_cuda)
         super().__init__(dir_process, _Plan)
         self(HEADER)

@@ -229,14 +229,25 @@ class AttrOP(Attr):
         raise NotImplementedError
 
 
-class AttrView(AttrOP):
-    def __init__(self, sub, args):
-        super().__init__(Exp.SHELL_AA[0], args)
+class AttrShell(AttrOP):
+    def __init__(self, op: str, sub: Attr, args):
+        super().__init__(op, args)
         self.sub = sub
 
     @property
     def symbol(self):
         return self.sub.symbol
+
+    def _calculate_indexed(self, sub, args):
+        pass
+
+    def _calculate_slice(self, args):
+        pass
+
+
+class AttrTranspose(AttrShell):
+    def __init__(self, sub, args):
+        super().__init__(Exp.SHELL_AA[0], sub, args)
 
     def _calculate(self):
         sub = self.sub.get_value()
@@ -249,7 +260,7 @@ class AttrView(AttrOP):
         if len(args) == 1:
             return self._calculate_sizeof(sub, args[0])
         # transpose
-        return self._calculate_view(sub, args)
+        return self._calculate_transpose(sub, args)
 
     @classmethod
     def _calculate_dim(cls, sub):
@@ -259,21 +270,13 @@ class AttrView(AttrOP):
     def _calculate_sizeof(cls, sub, axis):
         raise NotImplementedError
 
-    def _calculate_view(self, sub, args):
+    def _calculate_transpose(self, sub, args):
         raise NotImplementedError
 
-    def _calculate_slice(self, args):
-        pass
 
-
-class AttrIndexed(AttrOP):
+class AttrIndexed(AttrShell):
     def __init__(self, sub: Attr, args):
-        super().__init__(Exp.SHELL_RR[0], args)
-        self.sub = sub
-
-    @property
-    def symbol(self):
-        return self.sub.symbol
+        super().__init__(Exp.SHELL_RR[0], sub, args)
 
     def _calculate(self):
         sub = self.sub.get_value()
@@ -304,11 +307,19 @@ class AttrIndexed(AttrOP):
     def _calculate_copy(self, sub):
         raise NotImplementedError
 
-    def _calculate_indexed(self, sub, args):
-        raise NotImplementedError
 
-    def _calculate_slice(self, args):
-        pass
+class AttrView(AttrShell):
+    def __init__(self, sub: Attr, args):
+        super().__init__(Exp.SHELL_SS[0], sub, args)
+
+    def _calculate(self):
+        sub = self.sub.get_value()
+        args = self.args.get_value()
+        # view
+        return self._calculate_view(sub, args)
+
+    def _calculate_view(self, sub, args):
+        raise NotImplementedError
 
 
 class AttrMethod(Attr):
@@ -428,4 +439,4 @@ class AttrDict:
         return Attr(key)
 
 
-attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrTuple, AttrView)
+attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrTranspose, AttrTuple, AttrView)

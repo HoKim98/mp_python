@@ -11,8 +11,10 @@ if __name__ == '__main__':
                         default='Python')
     parser.add_argument('--debug', help='Catch the exception and interrupt process. (default: False)',
                         action='store_true')
+    parser.add_argument('-c,', '--use-cuda', help='Use the CUDA acceleration driver instead of the CPU. (default: False)',
+                        action='store_true')
     args = parser.parse_args()
 
     interpreter = find_interpreter(args.interpreter)
-    cmd = interpreter(dir_process=args.dir_process)
+    cmd = interpreter(dir_process=args.dir_process, use_cuda=args.use_cuda)
     cmd.begin_interactive(debug=args.debug)

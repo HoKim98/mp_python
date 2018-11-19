@@ -54,7 +54,7 @@ class AttrOP(_attribute.AttrOP):
         return slice(*args)
 
 
-class AttrView(_attribute.AttrView):
+class AttrTranspose(_attribute.AttrTranspose):
     @classmethod
     def _calculate_dim(cls, sub):
         return np.ndim(sub)
@@ -63,7 +63,7 @@ class AttrView(_attribute.AttrView):
     def _calculate_sizeof(cls, sub, axis):
         return np.size(sub, axis)
 
-    def _calculate_view(self, sub, args):
+    def _calculate_transpose(self, sub, args):
         dim = np.ndim(sub)
         if len(args) < dim:
             args += list(range(len(args), dim))
@@ -72,13 +72,18 @@ class AttrView(_attribute.AttrView):
 
 class AttrIndexed(_attribute.AttrIndexed):
     def _calculate_dim(self, sub):
-        return AttrView._calculate_dim(sub)
+        return AttrTranspose._calculate_dim(sub)
 
     def _calculate_copy(self, sub):
         return np.copy(sub)
 
     def _calculate_indexed(self, sub, args):
         return sub[tuple(args)]
+
+
+class AttrView(_attribute.AttrView):
+    def _calculate_view(self, sub, args):
+        return np.reshape(sub, args)
 
 
 class AttrMethod(_attribute.AttrMethod):
@@ -94,4 +99,4 @@ class AttrIteration(_attribute.AttrIteration):
     CONST = AttrConst
 
 
-attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrTuple, AttrView)
+attr_classes = (Attr, AttrConst, AttrIndexed, AttrIteration, AttrMethod, AttrOP, AttrTranspose, AttrTuple, AttrView)
