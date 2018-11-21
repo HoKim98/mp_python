@@ -1,3 +1,5 @@
+from math import ceil
+
 from mp.core import extension as _ext
 from mp.engine.pytorch.attribute import torch as _torch
 
@@ -39,6 +41,9 @@ class DatasetBatch:
         self.length = self.origin.shape[0]
         return self.code
 
+    def __len__(self):
+        return ceil(self.length / self.batch_size)
+
 
 @_ext.static('batch')
 def method_dataset_batch(toward, args, plan):
@@ -54,6 +59,7 @@ def method_dataset_batch(toward, args, plan):
     plan.event.add(code, method.next)
     plan.event.add('has next batch', method.has_next)
     plan.event.add('reset batch', method.reset)
+    plan.event.add('get batch length', method.__len__)
     return method.next()
 
 

@@ -33,7 +33,7 @@ OFFSET_MNIST = {
 
 
 @_ext.dataset(BASE_DIR, MAP_MNIST.keys())
-def method_dataset_mnist(name, filename, plan):
+def method_dataset_mnist(name, filename, args, plan):
     url = MAP_MNIST[filename]
     path = _www(url, BASE_DIR, filename, FILE_TYPE, plan)
     shape = SHAPE_MNIST[filename]

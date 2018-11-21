@@ -1,4 +1,3 @@
-from hurry.filesize import size as _size
 from tqdm import tqdm
 
 from mp.core import extension as _ext
@@ -9,26 +8,11 @@ from mp.core.io import IO
 from mp.engine.python.attribute import map_num_type
 from mp.engine.python.attribute import np as _np
 
-from mp.utils.environment import is_linux
-
 import gzip
 import os
 import requests
-import sys
 
 CHUNK_SIZE = 4096
-DEFAULT_TTY_WIDTH = 80
-FIXED_TTY_WIDTH = False
-
-
-def _get_width():
-    if is_linux and not FIXED_TTY_WIDTH:
-        size = os.popen('stty size', 'r').read().split()
-        # default value
-        if len(size) == 0:
-            return DEFAULT_TTY_WIDTH
-        return int(os.popen('stty size', 'r').read().split()[1])
-    return DEFAULT_TTY_WIDTH
 
 
 class ContentLoader:
@@ -62,15 +46,9 @@ class ContentLoader:
 
 
 def _www_download(name: str, url: str, filename: str):
-    """
-        Referred from https://stackoverflow.com/questions/566746/how-to-get-linux-console-window-width-in-python
-    """
-
     print('[www] Downloading %s' % name)
-    loader = ContentLoader(url)
-
     with open(os.path.join(filename), 'wb') as f:
-        for data in loader:
+        for data in ContentLoader(url):
             f.write(data)
 
 
@@ -111,5 +89,5 @@ def method_extern_www(toward, args, plan):
             filename = name.split('%s.' % method.base_dir)[1]
             if filename not in method.candidates:
                 raise WWWNotInCandidate(name, method.base_dir, method.candidates)
-            return method.execute_external(name, filename, plan)
+            return method.execute_external(name, filename, args, plan)
     raise WWWNotFound(name)

@@ -23,6 +23,12 @@ class Event:
         event = EventUnit(event_name, method)
         self.events.append(event)
 
+    def remove(self, event_name: str):
+        for idx, event in enumerate(self.events):
+            if event.match_name(event_name):
+                del self.events[idx]
+                return
+
     def __call__(self, event_name: str, *args, **kwargs):
         list_responses = list()
         for event in self.events:

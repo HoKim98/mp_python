@@ -8,7 +8,6 @@ from mp.dataset import core
 SCRIPT = 'save script'
 SCRIPT_METHOD = 'save script_method'
 SCRIPT_MNIST = 'save script_mnist'
-core.FIXED_TTY_WIDTH = True
 
 # --------------------------------------------------------------------------
 #             METHOD

@@ -238,6 +238,10 @@ class AttrShell(AttrOP):
     def symbol(self):
         return self.sub.symbol
 
+    def remove_cache(self):
+        self.sub.remove_cache()
+        super().remove_cache()
+
     def _calculate_indexed(self, sub, args):
         pass
 
