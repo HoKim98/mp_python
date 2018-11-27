@@ -242,7 +242,7 @@ class Operator(Variable):
 
 class Shell(Operator):
 
-    def __init__(self, sub, op, bracket_open, bracket_close, *indices):
+    def __init__(self, sub=None, op=None, bracket_open=None, bracket_close=None, *indices):
         super().__init__(op, Required())
         self.sub = sub
         self.bracket_open = bracket_open
@@ -257,19 +257,19 @@ class Shell(Operator):
 
 
 class Indexed(Shell):
-    def __init__(self, sub, *indices):
+    def __init__(self, sub=None, *indices):
         super().__init__(sub, Exp.SHELL_RR[0], Exp.RBO[0], Exp.RBC[0], *indices)
         self.is_indices = True
 
 
 class Transpose(Shell):
-    def __init__(self, sub, *dims):
+    def __init__(self, sub=None, *dims):
         super().__init__(sub, Exp.SHELL_AA[0], Exp.ABO[0], Exp.ABC[0], *dims)
         self.is_transpose = True
 
 
 class View(Shell):
-    def __init__(self, sub, *dims):
+    def __init__(self, sub=None, *dims):
         super().__init__(sub, Exp.SHELL_SS[0], Exp.SBO[0], Exp.SBC[0], *dims)
         self.is_view = True
 

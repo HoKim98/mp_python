@@ -38,5 +38,5 @@ def method_dataset_mnist(name, filename, args, plan):
     path = _www(url, BASE_DIR, filename, FILE_TYPE, plan)
     shape = SHAPE_MNIST[filename]
     offset = OFFSET_MNIST[filename]
-    _decompress(name, path, FILE_TYPE, DATA_TYPE, shape, offset=offset)
+    _decompress(plan, name, path, FILE_TYPE, DATA_TYPE, shape, offset=offset)
     return plan.io.get(name)

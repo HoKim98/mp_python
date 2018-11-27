@@ -1,3 +1,11 @@
+### 0.4.2.4 업데이트 내역
+1. 이제, `Plan`에서 명령의 수행은 `Event`를 통해 이루어집니다.
+    ```
+    script ---(MP)--> graph ---(MP & Plan Builtins)--> events ---(Plan)--> code
+    ```
+2. 이제, `mp.core.framework` 등을 추가하여 `numpy` 등 외부 모듈의 결합도를 낮췄습니다.
+3. 더이상 `mp.engine.python`을 지원하지 않습니다.
+
 ### 0.4.2.3 업데이트 내역
 1. 더이상 `hurry.filesize` 모듈에 의존하지 않습니다.
 2. 이제, `trace` 메소드를 이용해 훈련 상황을 실시간으로 판독할 수 있습니다.

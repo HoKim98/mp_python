@@ -1,6 +1,10 @@
 # 데이터셋 준비
-    train x = float(www.mnist.train.images) / 255.
-    train y = long(www.mnist.train.labels)
+    #train x = float(www.mnist.train.images) / 255.
+    #train y = long(www.mnist.train.labels)
+
+    partition = 150
+    train x = (float(www.mnist.train.images) / 255.)(:partition)
+    train y = (long(www.mnist.train.labels))(:partition)
 
 # 미니배치 준비
     train x = batch(train x, 50)

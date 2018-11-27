@@ -1,6 +1,6 @@
 from mp.core import extension as _ext
-from mp.engine.pytorch.attribute import torch as _torch
 from mp.engine.pytorch.device import Device
+from mp.engine.pytorch.framework import torch as _torch
 
 
 def _float_to_int(args):
@@ -35,6 +35,14 @@ def method_var(toward, args, plan):
     weight.requires_grad_(True)
     optim.add_param_group({'params': weight})
     return weight
+
+
+@_ext.static('copy')
+def method_copy(toward, args, plan):
+    symbol = '[copy]' if toward is None else toward.symbol
+    args.assert_sizeof(symbol, 1)
+    sub, = args.get_value()
+    return sub.clone()
 
 
 @_ext.static('float')

@@ -1,6 +1,7 @@
 import os
 
 from mp.core.expression import Expression as Exp
+from mp.core.framework import np
 
 
 class IO:
@@ -53,7 +54,7 @@ class IO:
 
     @classmethod
     def _load_binary_raw(cls, path):
-        raise NotImplementedError
+        return np.load(path)
 
     @classmethod
     def _load_binary(cls, name: str, path: str):
@@ -73,7 +74,7 @@ class IO:
 
     @classmethod
     def _save_binary(cls, path: str, value):
-        raise NotImplementedError
+        np.save(path, value, allow_pickle=False)
 
     @classmethod
     def _save_graph(cls, path: str, code: str):

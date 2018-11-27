@@ -1,6 +1,6 @@
 def test_utils_console():
-    from mp import PythonInterpreter
-    i = PythonInterpreter()
+    from mp import PyTorchInterpreter
+    i = PyTorchInterpreter()
     try:
         i.begin_interactive()
     except IOError:
@@ -31,7 +31,6 @@ def test_utils_environment():
 def test_utils_find_interpreter():
     from mp.core.error import NotInCandidate
     from mp.utils import find_interpreter
-    find_interpreter('Python')
     find_interpreter('PyTorch')
     try:
         find_interpreter('Potato', error_exit=False)

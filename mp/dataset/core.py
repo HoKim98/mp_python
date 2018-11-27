@@ -5,8 +5,7 @@ from mp.core.expression import Expression as Exp
 from mp.core.error import WWWNotFound, WWWNotInCandidate
 from mp.core.io import IO
 
-from mp.engine.python.attribute import map_num_type
-from mp.engine.python.attribute import np as _np
+from mp.core.framework import np as _np
 
 import gzip
 import os
@@ -62,7 +61,7 @@ def www(url: str, dataset_dir: str, filename: str, filetype: str, plan, force: b
     return path
 
 
-def decompress(name: str, path: str, filetype: str, num_type: str, shape=None, offset: int = 0):
+def decompress(plan, name: str, path: str, filetype: str, num_type: str, shape=None, offset: int = 0):
     file_in = '%s.%s' % (path, filetype)
     file_out = '%s.%s' % (path, Exp.EXTENSION_BINARY)
     if os.path.exists(file_out):
@@ -71,7 +70,7 @@ def decompress(name: str, path: str, filetype: str, num_type: str, shape=None, o
     print('[www] Decompressing %s' % name)
     if filetype in ['gz']:
         with gzip.open(file_in, 'rb') as f_in:
-            dtype = map_num_type[num_type]
+            dtype = plan.MAP_NUM_TYPE[num_type]
             raw = _np.frombuffer(f_in.read(), dtype, offset=offset)
             if shape is not None:
                 raw = raw.reshape(*shape)
@@ -81,7 +80,7 @@ def decompress(name: str, path: str, filetype: str, num_type: str, shape=None, o
 @_ext.header('www', fixed=True)
 def method_extern_www(toward, args, plan):
     name = str(toward).replace(Exp.SHELL_RR[0], '')
-    method, _ = plan.find_method(name)
+    method = plan.event.find(name, hidden=True)
     if method is not None:
         # must be hidden
         if method.hidden:
@@ -89,5 +88,5 @@ def method_extern_www(toward, args, plan):
             filename = name.split('%s.' % method.base_dir)[1]
             if filename not in method.candidates:
                 raise WWWNotInCandidate(name, method.base_dir, method.candidates)
-            return method.execute_external(name, filename, args, plan)
+            return method(name, filename, args, plan)
     raise WWWNotFound(name)

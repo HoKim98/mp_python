@@ -1,4 +1,3 @@
-from mp import PythonInterpreter
 from mp import PyTorchInterpreter
 from mp import RemoteInterpreter
 
@@ -43,11 +42,6 @@ def _test_specific_interpreter(interpreter, script):
 # --------------------------------------------------------------------------
 #             TEST
 # --------------------------------------------------------------------------
-
-
-def test_python():
-    interpreter = PythonInterpreter(_curdir())
-    _test_specific_interpreter(interpreter, SCRIPT)
 
 
 def test_pytorch():

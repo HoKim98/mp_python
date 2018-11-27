@@ -8,7 +8,7 @@
 # MATH
     a1 = 0. - 1.
 
-    a2 = __abs(a1 * 3.14)
+    a2 = abs(a1 * 3.14)
     at = a2 == 3.14
 
 # REDUCE

@@ -1,4 +1,4 @@
-import re
+from mp.core.event import EventUnit
 
 __all__ = ['extension', ]
 
@@ -24,43 +24,30 @@ class extension:
     @classmethod
     def dataset(cls, header: str, candidates):
         method = cls.header(header, fixed=True, hidden=True)
-        method.base_dir = header
-        method.candidates = candidates
+        method.add_attr('base_dir', header)
+        method.add_attr('candidates', candidates)
         return method
+
+    # For binary operator
+    # scope = globals()
+    @classmethod
+    def binary(cls, name: str, op, scope):
+        def wrapper(x, y, _=None):
+            return op(x, y)
+        method = cls.static(name)(wrapper)
+        scope['method_%s' % name[2:]] = method
 
 
 class _ExtensionWrapper:
     def __init__(self, regex: str, fixed: bool, hidden: bool):
-        self._method_name = regex
-        self._method_name_compiled = re.compile(self.method_name)
-        self._method = None
-        self._fixed = fixed
-        self._hidden = hidden
+        self._unit = EventUnit(regex, None, True, fixed, hidden, is_regex=True)
+        self._attr = dict()
 
-    @property
-    def method_name(self):
-        return self._method_name
-
-    @property
-    def fixed(self) -> bool:
-        return self._fixed
-
-    @property
-    def hidden(self) -> bool:
-        return self._hidden
-
-    def test(self, var_name: str, find_hidden: bool = False):
-        return self._method_name_compiled.search(var_name) is not None and (not self.hidden or find_hidden)
-
-    def execute(self, toward, args, plan):
-        return self._method(toward, args, plan)
-
-    def execute_external(self, *args, **kwargs):
-        return self._method(*args, **kwargs)
+    def add_attr(self, key, value):
+        self._attr[key] = value
 
     def __call__(self, method):
-        self._method = method
-        return self
-
-    def __repr__(self):
-        return '[Extension] %s' % self.method_name
+        self._unit.set_method(method)
+        for key, value in self._attr.items():
+            setattr(self._unit, key, value)
+        return self._unit

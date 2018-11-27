@@ -2,9 +2,11 @@ import os
 
 from mp.core import error
 from mp.core.token import Token
-from mp.core.error import IOError
+from mp.core.event import Event
 from mp.core.expression import Expression as Exp
 from mp.core.plan import Plan
+
+from mp.monitor import StdMonitor
 
 from mp.utils import interactive as _interactive
 
@@ -200,10 +202,13 @@ class TokenTree(list):
 
 class Interpreter:
 
-    def __init__(self, dir_process: str = './', plan=None, header_file=None, *args, **kwargs):
+    def __init__(self, dir_process: str = './', plan=None, monitor=None, header_file=None, *args, **kwargs):
         self.dir_process = os.path.abspath(os.path.join(dir_process))
         plan = Plan if plan is None else plan
+        monitor = StdMonitor if monitor is None else monitor
+        Exp.EVENT = Event()
         self.plan = plan(self.dir_process, self.code_to_data)
+        self.monitor = monitor()
         self._init_builtin_methods(Plan)
         self._init_builtin_methods(self.plan)
         if header_file is not None:
@@ -211,9 +216,7 @@ class Interpreter:
 
     @classmethod
     def add_module(cls, module_func):
-        if hasattr(module_func, 'method_name'):
-            method_name = module_func.method_name
-            Exp.BUILTINS[method_name] = module_func
+        Exp.EVENT.add_object(module_func)
 
     def code_to_data(self, message: str):
         lines = message.split(Exp.NEXTLINE)

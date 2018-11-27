@@ -84,7 +84,7 @@ class Expression:
     # DIR_UP = 'up'
 
     TENSOR = 'tensor'
-    BUILTINS = {r'^%s$' % TENSOR: NotImplemented, }
+    EVENT = None
 
     EXTENSION_SOURCE = 'mp'
     EXTENSION_BINARY = 'npy'

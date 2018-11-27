@@ -1,5 +1,5 @@
 from mp.core import extension as _ext
-from mp.engine.pytorch.attribute import torch as _torch
+from mp.engine.pytorch.framework import torch as _torch
 
 _F = _torch.nn.functional
 

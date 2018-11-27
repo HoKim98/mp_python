@@ -1,36 +1,7 @@
 from mp.core.error import ConstError, NotDataError, RequiredError, TooMuchOrLessArguments
 from mp.core.error import TypeError as _TypeError
+from mp.core.event import Event
 from mp.core.expression import Expression as Exp
-
-
-map_num_type = {
-    'b': NotImplemented,
-    'i8': NotImplemented,
-    'i32': NotImplemented,
-    'i64': NotImplemented,
-    'f16': NotImplemented,
-    'f32': NotImplemented,
-    'f64': NotImplemented,
-}
-map_op = {
-    tuple(Exp.ADD + Exp.IADD): NotImplemented,
-    tuple(Exp.SUB + Exp.ISUB): NotImplemented,
-    tuple(Exp.MUL + Exp.IMUL): NotImplemented,
-    tuple(Exp.TDIV + Exp.ITDIV): NotImplemented,
-    tuple(Exp.MAT + Exp.IMAT): NotImplemented,
-    tuple(Exp.POW + Exp.IPOW): NotImplemented,
-    tuple(Exp.POW + Exp.IPOW): NotImplemented,
-    tuple(Exp.FDIV + Exp.IFDIV): NotImplemented,
-    tuple(Exp.MOD + Exp.IMOD): NotImplemented,
-
-    tuple(Exp.EQ): NotImplemented,
-    tuple(Exp.NEQ): NotImplemented,
-    tuple(Exp.GT): NotImplemented,
-    tuple(Exp.GE): NotImplemented,
-    tuple(Exp.LT): NotImplemented,
-    tuple(Exp.LE): NotImplemented,
-}
-map_op = {op: order for ops, order in map_op.items() for op in ops}
 
 
 class Attr:
@@ -144,6 +115,7 @@ class AttrTuple(Attr):
         if execute_recursive is not None:
             args = [execute_recursive(arg) for arg in args]
         self.list = args
+        self._execute_recursive = execute_recursive
 
     def get_value(self):
         return [self.ATTR.to_value(arg) for arg in self.list]
@@ -162,11 +134,14 @@ class AttrTuple(Attr):
             raise TooMuchOrLessArguments(symbol, expected, len(self), greater_or_less)
 
     @classmethod
-    def assert_false_to_none(self, value):
+    def assert_false_to_none(cls, value):
         if value is not None:
             if type(value) is bool:
                 return None if not value else True
         return value
+
+    def copy(self, *pre_args):
+        return self.__class__(list(pre_args) + self.list.copy())
 
     def __repr__(self):
         args = []
@@ -182,7 +157,24 @@ class AttrTuple(Attr):
 
 
 class AttrOP(Attr):
-    MAP_OP = map_op
+    MAP_OP = {
+        tuple(Exp.ADD + Exp.IADD): Event.delegate('__math_add'),
+        tuple(Exp.SUB + Exp.ISUB): Event.delegate('__math_sub'),
+        tuple(Exp.MUL + Exp.IMUL): Event.delegate('__math_mul'),
+        tuple(Exp.TDIV + Exp.ITDIV): Event.delegate('__math_tdiv'),
+        tuple(Exp.MAT + Exp.IMAT): Event.delegate('__math_mat'),
+        tuple(Exp.POW + Exp.IPOW): Event.delegate('__math_pow'),
+        tuple(Exp.FDIV + Exp.IFDIV): Event.delegate('__math_fdiv'),
+        tuple(Exp.MOD + Exp.IMOD): Event.delegate('__math_mod'),
+
+        tuple(Exp.EQ): Event.delegate('__math_eq'),
+        tuple(Exp.NEQ): Event.delegate('__math_neq'),
+        tuple(Exp.GT): Event.delegate('__math_gt'),
+        tuple(Exp.GE): Event.delegate('__math_ge'),
+        tuple(Exp.LT): Event.delegate('__math_lt'),
+        tuple(Exp.LE): Event.delegate('__math_le'),
+    }
+    MAP_OP = {op: order for ops, order in MAP_OP.items() for op in ops}
 
     def __init__(self, op: str, args):
         super().__init__(op)
@@ -206,8 +198,8 @@ class AttrOP(Attr):
                 arg.remove_cache()
 
     def _calculate(self):
-        args = self.args.get_value()
         if self.op in self.MAP_OP.keys():
+            args = self.args.get_value()
             # check type
             args = args[:2]
             for arg, var_arg in zip(args, self.args.list):
@@ -222,11 +214,12 @@ class AttrOP(Attr):
             except TypeError as e:
                 raise _TypeError(str(e))
         if self.op in Exp.IDX:
-            return self._calculate_slice(args)
+            return self._calculate_slice(self.args)
         raise NotImplementedError
 
-    def _calculate_slice(self, args):
-        raise NotImplementedError
+    @classmethod
+    def _calculate_slice(cls, args):
+        return Exp.EVENT('__reduce_slice', None, args, None)
 
 
 class AttrShell(AttrOP):
@@ -254,28 +247,32 @@ class AttrTranspose(AttrShell):
         super().__init__(Exp.SHELL_AA[0], sub, args)
 
     def _calculate(self):
-        sub = self.sub.get_value()
-        args = self.args.get_value()
-
+        args = self.args.copy()
         # dim
-        if len(args) == 0:
-            return self._calculate_dim(sub)
+        if len(self.args) == 0:
+            del args.list[0:]
+            args.list.append(self.sub)
+            return self._calculate_dim(args)
         # sizeof
-        if len(args) == 1:
-            return self._calculate_sizeof(sub, args[0])
+        if len(self.args) == 1:
+            del args.list[1:]
+            return self._calculate_sizeof(self.sub, args)
         # transpose
-        return self._calculate_transpose(sub, args)
+        return self._calculate_transpose(self.sub, args)
 
     @classmethod
     def _calculate_dim(cls, sub):
-        raise NotImplementedError
+        return Exp.EVENT('__reduce_dim', None, sub, None)
 
     @classmethod
     def _calculate_sizeof(cls, sub, axis):
-        raise NotImplementedError
+        args = axis.copy(sub)
+        return Exp.EVENT('__reduce_sizeof', None, args, None)
 
-    def _calculate_transpose(self, sub, args):
-        raise NotImplementedError
+    @classmethod
+    def _calculate_transpose(cls, sub, args):
+        args = args.copy(sub)
+        return Exp.EVENT('__reduce_transpose', None, args, None)
 
 
 class AttrIndexed(AttrShell):
@@ -283,33 +280,43 @@ class AttrIndexed(AttrShell):
         super().__init__(Exp.SHELL_RR[0], sub, args)
 
     def _calculate(self):
-        sub = self.sub.get_value()
         # if method delegate
-        if hasattr(sub, 'is_data'):
-            if sub.is_method and sub.args is None:
-                return self._calculate_method_delegate(sub)
+        if hasattr(self.sub, 'is_pointer'):
+            if self.sub.is_pointer:
+                return self._calculate_method_delegate(self.sub)
 
-        args = self.args.get_value()
+        args = self.args.copy()
         # copy object
         if len(args) == 0:
-            return self._calculate_copy(sub)
+            del args.list[0:]
+            args.list.append(self.sub)
+            return self._calculate_copy(args)
         # slicing
         # check size
-        dim_sub = self._calculate_dim(sub)
+        del args.list[0:]
+        args.list.append(self.sub)
+        dim_sub = self._calculate_dim(args)
         dim_args = len(args)
         if dim_sub < dim_args:
             raise TooMuchOrLessArguments(self.symbol, dim_sub, dim_args, -1)
-        return self._calculate_indexed(sub, args)
+        return self._calculate_indexed(self.sub, self.args)
 
     def _calculate_method_delegate(self, sub):
         sub.args = self.args
         return sub.get_value()
 
-    def _calculate_dim(self, sub):
-        raise NotImplementedError
+    @classmethod
+    def _calculate_dim(cls, sub):
+        return AttrTranspose._calculate_dim(sub)
 
-    def _calculate_copy(self, sub):
-        raise NotImplementedError
+    @classmethod
+    def _calculate_copy(cls, sub):
+        return Exp.EVENT('copy', None, sub, None)
+
+    @classmethod
+    def _calculate_indexed(cls, sub, args):
+        args = args.copy(sub)
+        return Exp.EVENT('__reduce_indexed', None, args, None)
 
 
 class AttrView(AttrShell):
@@ -317,13 +324,12 @@ class AttrView(AttrShell):
         super().__init__(Exp.SHELL_SS[0], sub, args)
 
     def _calculate(self):
-        sub = self.sub.get_value()
-        args = self.args.get_value()
-        # view
-        return self._calculate_view(sub, args)
+        return self._calculate_view(self.sub, self.args)
 
-    def _calculate_view(self, sub, args):
-        raise NotImplementedError
+    @classmethod
+    def _calculate_view(cls, sub, args):
+        args = args.copy(sub)
+        return Exp.EVENT('__reduce_view', None, args, None)
 
 
 class AttrMethod(Attr):
@@ -347,6 +353,10 @@ class AttrMethod(Attr):
     def reusable(self):
         return super().reusable and self.fixed
 
+    @property
+    def is_pointer(self):
+        return self.args is None
+
     def remove_cache(self):
         if self.args is not None and not self.fixed:
             for arg in self.args.list:
@@ -355,7 +365,7 @@ class AttrMethod(Attr):
 
     def _calculate(self):
         # if pointing method
-        if self.args is None:
+        if self.is_pointer:
             self.is_data = False
             return self
             # return None
@@ -364,11 +374,11 @@ class AttrMethod(Attr):
         if self.repeat is not None:
             num_repeat = int(self.repeat.get_value())
             for _ in range(num_repeat):
-                result = self.method.execute(self.toward, self.args, self.plan)
+                result = self.method(self.toward, self.args, self.plan)
                 result = self._assert_result_not_none(result)
         # else
         else:
-            result = self.method.execute(self.toward, self.args, self.plan)
+            result = self.method(self.toward, self.args, self.plan)
             result = self._assert_result_not_none(result)
         self.is_data = self.toward.is_data
         return result

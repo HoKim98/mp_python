@@ -17,8 +17,6 @@ class Graph:
         self.ios = OrderedDict()
         # print files sometime
         self.prints = OrderedDict()
-        # do not make pointer
-        self.lock_point = False
         # point self
         self.var_self = list()
 
@@ -55,9 +53,9 @@ class Graph:
         if name in Exp.REQUIRED:
             return Required()
         # this is a method
-        for method in Exp.BUILTINS.values():
-            if method.test(name):
-                return Builtins(name)
+        method = Exp.EVENT.find_unique(name)
+        if method is not None:
+            return Builtins(name)
         # this is user-defined method
         if name in Exp.METHOD:
             return UserDefinedMethod(name)
@@ -322,10 +320,6 @@ class Graph:
             return self.inplace(sub, obj)
         # := (disposable substitute)
         if op in Exp.DIS:
-            # don't use disposing while calculation
-            if self.lock_point:
-                return self.inplace(sub, obj)
-            # else
             sub.is_pointer = True
             sub.is_pointer_orient = True
             # can substitute
@@ -350,7 +344,7 @@ class Graph:
         return tmp
 
     # cleanup io requests
-    def clean(self):
+    def clear(self):
         self.ios = OrderedDict()
         self.prints = OrderedDict()
 

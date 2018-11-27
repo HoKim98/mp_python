@@ -1,29 +1,37 @@
-from mp.core import attribute as _attribute
+from mp.core import attribute as attr
 from mp.core import builtins as _builtins
 from mp.core import data
 from mp.core.error import BaseError, RequiredError, TooMuchOrLessArguments
-from mp.core.event import Event
 from mp.core.expression import Expression as Exp
 from mp.core.graph import Graph
 from mp.core.io import IO
 
 
 class Plan:
-    ATTR = _attribute
     BUILTINS = _builtins
     CLASS_IO = IO
 
+    MAP_NUM_TYPE = {
+        # bool-type is not supported
+        'b': NotImplemented,
+        'i8': NotImplemented,
+        'i32': NotImplemented,
+        'i64': NotImplemented,
+        'f16': NotImplemented,
+        'f32': NotImplemented,
+        'f64': NotImplemented,
+    }
+
     def __init__(self, dir_process: str, message_to_data):
         self.code_to_data = message_to_data
-        self.attr = self.ATTR.AttrDict()
+        self.attr = attr.AttrDict()
         self.io = self.CLASS_IO(dir_process)
         self.graph = Graph()
         # Manages events for built-in methods.
-        self.event = Event()
+        self.event = Exp.EVENT
 
     # execute along IO
     def execute(self):
-        # self.graph.lock_point = True
         try:
             # (save, delete) files
             for var_name, var, value, value_raw in self._get_wait_list(self.graph.ios):
@@ -33,17 +41,18 @@ class Plan:
                 self.print_var(var, value_raw)
         # if error : finish
         except BaseError as e:
-            self.graph.clean()
+            self.graph.clear()
             raise e
-        self.graph.lock_point = False
-        self.graph.clean()
+        self.graph.clear()
 
     # find method in builtins
     @classmethod
     def find_method(cls, name: str, find_hidden: bool = True):
-        for method in Exp.BUILTINS.values():
-            if method.test(name, find_hidden):
-                return method, method.fixed
+        method = Exp.EVENT.find_unique(name, find_hidden)
+        if method is not None:
+            fixed = method.fixed
+            method = Exp.EVENT.delegate(name, find_hidden)
+            return method, fixed
         return None, None
 
     def _get_wait_list(self, wait_list):
@@ -127,11 +136,11 @@ class Plan:
 
     def _execute_constant(self, toward: data.Constant):
         # unsupported type
-        if toward.num_type not in self.ATTR.map_num_type.keys():
+        if toward.num_type not in self.MAP_NUM_TYPE.keys():
             raise SyntaxError(toward.num_type)
         # create new tensor object
         value = self._new_const(toward)
-        const = self.ATTR.AttrConst(value)
+        const = attr.AttrConst(value)
         return const
 
     def _execute_operator_modify(self, toward):
@@ -147,27 +156,27 @@ class Plan:
         if toward.op in Exp.IS:
             return self._execute_operator_modify(toward)
         # the others
-        args = self.ATTR.AttrTuple([toward.sub, toward.obj, toward.step, *toward.args], self._execute_recursive)
-        op = self.ATTR.AttrOP(toward.op, args)
+        args = attr.AttrTuple([toward.sub, toward.obj, toward.step, *toward.args], self._execute_recursive)
+        op = attr.AttrOP(toward.op, args)
         return op
 
     def _execute_indexed(self, toward: data.Indexed):
-        return self._execute_shell(toward, self.ATTR.AttrIndexed)
+        return self._execute_shell(toward, attr.AttrIndexed)
 
     def _execute_transpose(self, toward: data.Transpose):
-        return self._execute_shell(toward, self.ATTR.AttrTranspose)
+        return self._execute_shell(toward, attr.AttrTranspose)
 
     def _execute_view(self, toward: data.Transpose):
-        return self._execute_shell(toward, self.ATTR.AttrView)
+        return self._execute_shell(toward, attr.AttrView)
 
     def _execute_shell(self, toward: data.Shell, attribute_type):
         sub = self._execute_recursive(toward.sub)
-        args = self.ATTR.AttrTuple(toward.args, self._execute_recursive)
+        args = attr.AttrTuple(toward.args, self._execute_recursive)
         op = attribute_type(sub, args)
         return op
 
     def _execute_tuple(self, toward: data.Tuple):
-        return self.ATTR.AttrTuple(toward.args, self._execute_recursive)
+        return attr.AttrTuple(toward.args, self._execute_recursive)
 
     def _execute_method_update_repeat(self, repeat_old, repeat_new):
         if repeat_old is None:
@@ -188,9 +197,9 @@ class Plan:
         # if builtins
         if toward.is_builtins:
             method, fixed = self.find_method(toward.name, find_hidden=False)
-            args = self.ATTR.AttrTuple(toward_origin.args, self._execute_recursive)
+            args = attr.AttrTuple(toward_origin.args, self._execute_recursive)
             repeat = self._execute_recursive(repeat)
-            return self.ATTR.AttrMethod(self, name, method, toward_origin, args, fixed, repeat)
+            return attr.AttrMethod(self, name, method, toward_origin, args, fixed, repeat)
         # if user-defined methods
         if toward.is_method_defined:
             return self._execute_method_defined(toward, name, toward_origin.args, repeat)
@@ -209,16 +218,16 @@ class Plan:
         # check sizeof args
         if toward.args_min > len(args) or toward.args_max < len(args):
             raise TooMuchOrLessArguments(name, toward.args_min, len(args), int(toward.args_min != toward.args_max))
-        args = self.ATTR.AttrTuple(args, self._execute_recursive)
+        args = attr.AttrTuple(args, self._execute_recursive)
         # add placeholders
-        placeholders = self.ATTR.AttrTuple(toward.args, self._execute_recursive)
+        placeholders = attr.AttrTuple(toward.args, self._execute_recursive)
         # call method
         method = self._execute_recursive(toward.toward)
         method.code = toward.toward.encode()
         # add repeat
         repeat = self._execute_recursive(repeat)
         # create iteration
-        method = self.ATTR.AttrIteration(toward.name, method, toward, placeholders, args, repeat)
+        method = attr.AttrIteration(toward.name, method, toward, placeholders, args, repeat)
         return method
 
     # find variable from file-system
@@ -243,7 +252,7 @@ class Plan:
             self.graph.pop_self()
             # just script
             if toward.toward is None:
-                return self.ATTR.AttrConst(False)
+                return attr.AttrConst(False)
             var = self._execute_recursive(toward)
             return var
         # if binary
@@ -269,4 +278,4 @@ class Plan:
 
     @classmethod
     def get_builtin_methods(cls):
-        return [t for t in dir(cls.BUILTINS) if hasattr(getattr(cls.BUILTINS, t), 'method_name')], cls.BUILTINS
+        return [t for t in dir(cls.BUILTINS) if hasattr(getattr(cls.BUILTINS, t), '_method')], cls.BUILTINS
