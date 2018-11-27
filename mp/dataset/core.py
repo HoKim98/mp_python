@@ -1,6 +1,7 @@
 from tqdm import tqdm
 
 from mp.core import extension as _ext
+from mp.core import framework
 from mp.core.expression import Expression as Exp
 from mp.core.error import WWWNotFound, WWWNotInCandidate
 from mp.core.io import IO
@@ -70,7 +71,7 @@ def decompress(plan, name: str, path: str, filetype: str, num_type: str, shape=N
     print('[www] Decompressing %s' % name)
     if filetype in ['gz']:
         with gzip.open(file_in, 'rb') as f_in:
-            dtype = plan.MAP_NUM_TYPE[num_type]
+            dtype = framework.MAP_NUM_TYPE[num_type]
             raw = _np.frombuffer(f_in.read(), dtype, offset=offset)
             if shape is not None:
                 raw = raw.reshape(*shape)

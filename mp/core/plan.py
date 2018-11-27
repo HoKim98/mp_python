@@ -1,6 +1,7 @@
 from mp.core import attribute as attr
 from mp.core import builtins as _builtins
 from mp.core import data
+from mp.core import framework
 from mp.core.error import BaseError, RequiredError, TooMuchOrLessArguments
 from mp.core.expression import Expression as Exp
 from mp.core.graph import Graph
@@ -11,16 +12,7 @@ class Plan:
     BUILTINS = _builtins
     CLASS_IO = IO
 
-    MAP_NUM_TYPE = {
-        # bool-type is not supported
-        'b': NotImplemented,
-        'i8': NotImplemented,
-        'i32': NotImplemented,
-        'i64': NotImplemented,
-        'f16': NotImplemented,
-        'f32': NotImplemented,
-        'f64': NotImplemented,
-    }
+    MAP_NUM_TYPE = framework.MAP_NUM_TYPE
 
     def __init__(self, dir_process: str, message_to_data):
         self.code_to_data = message_to_data
