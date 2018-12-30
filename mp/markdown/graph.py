@@ -10,16 +10,15 @@ class GraphWriter(_BaseWriter):
 
     NODE_IDX = ['|sub|', '|obj|', '|step|', '|repeat|']
     VIEWPOINTS = ['LR', 'TD', ]
-    LEVEL = [1, 2, 3, ]
 
     SPECIAL_CHAR = {
         '-': ' - ',
     }
 
-    def __init__(self, filename: str = None, viewpoint: str = VIEWPOINTS[0], level: int = LEVEL[-1]):
+    def __init__(self, filename: str = None, viewpoint: str = VIEWPOINTS[0], level: int = _BaseWriter.LEVEL[-1]):
         self.viewpoint = 'graph %s' % viewpoint
         self.level = level
-        super().__init__(filename, 'mg')
+        super().__init__(filename, level, 'mg')
 
         self.vars = list()
         self.ops = list()

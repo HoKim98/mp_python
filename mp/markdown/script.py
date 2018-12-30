@@ -7,8 +7,8 @@ class ScriptWriter(_BaseWriter):
         The following code relies on the 'markdown' script.
     """
 
-    def __init__(self, filename: str = None):
-        super().__init__(filename, 'mp')
+    def __init__(self, filename: str = None, level: int = _BaseWriter.LEVEL[-1]):
+        super().__init__(filename, level, 'mp')
 
         self.vars = list()
 
@@ -20,10 +20,18 @@ class ScriptWriter(_BaseWriter):
 
         if var.is_variable:
             if var.toward is not None:
+                # not parameter
+                if not self.describe(detail=True) and var.symbol.startswith('_'):
+                    return
+                # not pre-defined variable
+                if not self.describe(detail=True) and var.symbol in ['true', 'false', 'none']:
+                    return
+                # else
                 if not var.toward.is_placeholder:
                     self(self._encode(var))
         if var.is_method_delegate and not var.is_method_defined and not var.is_builtins:
-            self(self._encode(var))
+            if self.describe(detail=True):
+                self(self._encode(var))
 
     def _draw_vars(self, args):
         for arg in args:

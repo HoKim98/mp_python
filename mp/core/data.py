@@ -306,7 +306,7 @@ class Method(Variable):
         sub = super().replace(name, value)
         if not self.is_method_delegate:
             sub.args = [self._replace(arg, name, value) for arg in sub.args]
-            sub.repeat = self._replace(sub.repeat, name, value)
+        sub.repeat = self._replace(sub.repeat, name, value)
         return sub
 
     def get_real_method(self):

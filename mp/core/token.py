@@ -135,17 +135,16 @@ class Token:
         for arg_to in args:
             var.args_max += 1
             # create a parameter
-            new_var = self._new_parameter(arg_to, graph)
-            # replace from global variable
-            args_new.append(new_var)
-            var.toward.replace(arg_to.symbol, new_var)
-            arg_to = new_var
+            parameter = self._new_parameter(arg_to, graph)
+            # replace global variable with it
+            args_new.append(parameter)
+            var.toward.replace(arg_to.symbol, parameter)
             # if required
-            if arg_to.is_required:
-                graph.set_placeholder(arg_to)
+            if parameter.is_required:
+                graph.set_placeholder(parameter)
                 var.args_min += 1
                 if var.args_min != var.args_max:
-                    raise SyntaxError(arg_to.symbol)
+                    raise SyntaxError(parameter.symbol)
         var.args = args_new
         if var.toward.is_variable:
             var.toward = self._new_parameter(var.toward, graph)

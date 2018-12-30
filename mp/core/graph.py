@@ -91,9 +91,7 @@ class Graph:
             # if just declaring
             if toward.toward is None:
                 raise RequiredError(toward.name)
-        self.rename(name, self.new_name())  # TODO 이전 변수 자리에 대체 가능한가?
-        if toward.repeat is not None:
-            repeat = toward.repeat
+        self.rename(name, self.new_name())
         sub = Method(name, toward, repeat=repeat)
         sub.name = name
         self.vars[name] = sub

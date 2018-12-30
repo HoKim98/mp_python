@@ -170,7 +170,8 @@ class Plan:
     def _execute_tuple(self, toward: data.Tuple):
         return attr.AttrTuple(toward.args, self._execute_recursive)
 
-    def _execute_method_update_repeat(self, repeat_old, repeat_new):
+    @classmethod
+    def _execute_method_update_repeat(cls, repeat_old, repeat_new):
         if repeat_old is None:
             return repeat_new
         if repeat_new is None:
@@ -186,6 +187,7 @@ class Plan:
             toward = toward.toward
             if name.startswith(Exp.CODE_CONST):
                 name = toward.name
+            repeat = self._execute_method_update_repeat(repeat, toward.repeat)
         # if builtins
         if toward.is_builtins:
             method, fixed = self.find_method(toward.name, find_hidden=False)
