@@ -79,7 +79,7 @@ def decompress(plan, name: str, path: str, filetype: str, num_type: str, shape=N
 
 
 @_ext.header('www', fixed=True)
-def method_extern_www(toward, args, plan):
+def method_extern_www(plan, toward, args, kwargs):
     name = str(toward).replace(Exp.SHELL_RR[0], '')
     method = plan.event.find(name, hidden=True)
     if method is not None:
@@ -89,5 +89,5 @@ def method_extern_www(toward, args, plan):
             filename = name.split('%s.' % method.base_dir)[1]
             if filename not in method.candidates:
                 raise WWWNotInCandidate(name, method.base_dir, method.candidates)
-            return method(name, filename, args, plan)
+            return method(plan, name, filename, args)
     raise WWWNotFound(name)

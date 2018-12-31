@@ -2,12 +2,12 @@ from mp.core import extension as _ext
 
 
 @_ext.static('tensor', fixed=True)
-def method_tensor(toward, args, plan):
+def method_tensor(plan, toward, args, kwargs):
     raise NotImplementedError
 
 
 @_ext.static('if')
-def method_if(toward, args, plan):
+def method_if(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 3)
     condition = bool(args.list[0].get_value())
     result = args.list[2 - int(condition)]
@@ -16,7 +16,7 @@ def method_if(toward, args, plan):
 
 
 @_ext.static('repeat')
-def method_repeat(toward, args, plan):
+def method_repeat(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 2)
     method, repeat = args.list
     repeat = repeat.get_value()

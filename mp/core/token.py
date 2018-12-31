@@ -159,6 +159,9 @@ class Token:
         method_base = self._find_method_base(var.toward)
         if method_base.is_method_defined:
             self._replace_keywords(method_base.args, var.args)
+        # the others
+        else:
+            self._detach_keywords(var)
         return var
 
     def _repeat_call(self, sub, operands, graph):
@@ -204,6 +207,16 @@ class Token:
                     save_replace(idx_real, idx_real)
                     expand()
                     real_params[idx_type] = tmp
+
+    def _detach_keywords(self, var):
+        kwargs_begin = None
+        for idx, (arg, arg_ast) in enumerate(zip(var.args, self.args[1:])):
+            if arg_ast.name in Exp.IS:
+                var.kwargs[arg.symbol] = arg.toward
+                kwargs_begin = kwargs_begin or idx
+            elif kwargs_begin is not None:
+                raise SyntaxError(arg.symbol)
+        var.args = var.args[:kwargs_begin]
 
     @classmethod
     def _new_parameter(cls, var, graph):

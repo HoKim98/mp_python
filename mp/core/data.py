@@ -15,6 +15,7 @@ class Variable:
         self.args = []
         self.args_min = 0
         self.args_max = 0
+        self.kwargs = {}
 
         self.is_pointer = False
         self.is_pointer_orient = False

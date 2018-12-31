@@ -205,6 +205,8 @@ class Graph:
             self.gc(var.toward)
             for arg in var.args:
                 self.gc(arg)
+            for arg in var.kwargs.values():
+                self.gc(arg)
             # never enter toward
             if var.toward is not None:
                 return False
@@ -224,6 +226,8 @@ class Graph:
             if not use_item:
                 # remove args if method
                 for arg in var.args:
+                    self.gc(arg)
+                for arg in var.kwargs.values():
                     self.gc(arg)
                 del self.vars[name]
                 self.gc(var.toward)

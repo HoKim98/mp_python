@@ -219,7 +219,7 @@ class AttrOP(Attr):
 
     @classmethod
     def _calculate_slice(cls, args):
-        return Exp.EVENT('__reduce_slice', None, args, None)
+        return Exp.EVENT('__reduce_slice', None, None, args, {})
 
 
 class AttrShell(AttrOP):
@@ -262,17 +262,17 @@ class AttrTranspose(AttrShell):
 
     @classmethod
     def _calculate_dim(cls, sub):
-        return Exp.EVENT('__reduce_dim', None, sub, None)
+        return Exp.EVENT('__reduce_dim', None, None, sub, {})
 
     @classmethod
     def _calculate_sizeof(cls, sub, axis):
         args = axis.copy(sub)
-        return Exp.EVENT('__reduce_sizeof', None, args, None)
+        return Exp.EVENT('__reduce_sizeof', None, None, args, {})
 
     @classmethod
     def _calculate_transpose(cls, sub, args):
         args = args.copy(sub)
-        return Exp.EVENT('__reduce_transpose', None, args, None)
+        return Exp.EVENT('__reduce_transpose', None, None, args, {})
 
 
 class AttrIndexed(AttrShell):
@@ -311,12 +311,12 @@ class AttrIndexed(AttrShell):
 
     @classmethod
     def _calculate_copy(cls, sub):
-        return Exp.EVENT('copy', None, sub, None)
+        return Exp.EVENT('copy', None, None, sub, {})
 
     @classmethod
     def _calculate_indexed(cls, sub, args):
         args = args.copy(sub)
-        return Exp.EVENT('__reduce_indexed', None, args, None)
+        return Exp.EVENT('__reduce_indexed', None, None, args, {})
 
 
 class AttrView(AttrShell):
@@ -329,15 +329,16 @@ class AttrView(AttrShell):
     @classmethod
     def _calculate_view(cls, sub, args):
         args = args.copy(sub)
-        return Exp.EVENT('__reduce_view', None, args, None)
+        return Exp.EVENT('__reduce_view', None, None, args, {})
 
 
 class AttrMethod(Attr):
-    def __init__(self, plan, name: str, method, toward, args, fixed, repeat=None):
+    def __init__(self, plan, name: str, method, toward, args, kwargs, fixed, repeat=None):
         super().__init__(name, toward)
         self.is_method = True
         self.method = method
         self.args = args
+        self.kwargs = kwargs
         self.fixed = fixed
 
         self.plan = plan
@@ -374,11 +375,11 @@ class AttrMethod(Attr):
         if self.repeat is not None:
             num_repeat = int(self.repeat.get_value())
             for _ in range(num_repeat):
-                result = self.method(self.toward, self.args, self.plan)
+                result = self.method(self.plan, self.toward, self.args, self.kwargs)
                 result = self._assert_result_not_none(result)
         # else
         else:
-            result = self.method(self.toward, self.args, self.plan)
+            result = self.method(self.plan, self.toward, self.args, self.kwargs)
             result = self._assert_result_not_none(result)
         self.is_data = self.toward.is_data
         return result
@@ -393,7 +394,7 @@ class AttrIteration(AttrMethod):
     CONST = AttrConst
 
     def __init__(self, name: str, method, toward, placeholders, args, repeat=None):
-        super().__init__(None, name, method, toward, args, False, repeat)
+        super().__init__(None, name, method, toward, args, {}, False, repeat)
         self.placeholders = placeholders
         self.args_bak = None
 
@@ -439,9 +440,16 @@ class AttrIteration(AttrMethod):
 
 
 class AttrDict:
+    ATTR = Attr
 
-    def __init__(self):
-        self.dict = dict()
+    def __init__(self, kwargs=None, execute_recursive=None):
+        if execute_recursive is not None:
+            kwargs = {key: execute_recursive(value) for key, value in kwargs.items()}
+        self.dict = kwargs or {}
+        self._execute_recursive = execute_recursive
+
+    def get_value(self):
+        return {key: self.ATTR.to_value(value) for key, value in self.dict.items()}
 
     def __getitem__(self, name) -> Attr:
         # create new attr if not exists

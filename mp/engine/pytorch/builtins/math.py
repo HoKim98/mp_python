@@ -2,7 +2,7 @@ from mp.core import extension as _ext
 
 
 @_ext.static('abs')
-def method_math_abs(toward, args, plan):
+def method_math_abs(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 1)
     x, = args.get_value()
     x = x.abs()

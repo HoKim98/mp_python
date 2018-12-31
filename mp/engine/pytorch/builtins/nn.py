@@ -15,7 +15,7 @@ def _int_or_tuple(value):
 
 
 @_ext.static('__nn_dense')
-def method_nn_dense(toward, args, plan):
+def method_nn_dense(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 3)
     x, weight, bias = args.get_value()
     bias = args.assert_false_to_none(bias)
@@ -28,7 +28,7 @@ def method_nn_dense(toward, args, plan):
 
 
 @_ext.static('__nn_cross_entropy')
-def method_nn_cross_entropy(toward, args, plan):
+def method_nn_cross_entropy(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 2)
     x, y = args.get_value()
     x = _F.cross_entropy(x, y)
@@ -40,21 +40,21 @@ def method_nn_cross_entropy(toward, args, plan):
 
 
 @_ext.static('__nn_sigmoid')
-def method_nn_sigmoid(toward, args, plan):
+def method_nn_sigmoid(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 1)
     x, = args.get_value()
     x = x.sigmoid()
     return x
 
 @_ext.static('__nn_tanh')
-def method_nn_tanh(toward, args, plan):
+def method_nn_tanh(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 1)
     x, = args.get_value()
     x = x.tanh()
     return x
 
 @_ext.static('__nn_softmax')
-def method_nn_softmax(toward, args, plan):
+def method_nn_softmax(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 2)
     x, dim = args.get_value()
     dim = args.assert_false_to_none(dim)
@@ -64,7 +64,7 @@ def method_nn_softmax(toward, args, plan):
     return x
 
 @_ext.static('__nn_relu')
-def method_nn_relu(toward, args, plan):
+def method_nn_relu(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 1)
     x, = args.get_value()
     x = _F.relu(x)
@@ -76,7 +76,7 @@ def method_nn_relu(toward, args, plan):
 
 
 @_ext.static('__nn_conv1d')
-def method_nn_conv1d(toward, args, plan):
+def method_nn_conv1d(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 6)
     x, weight, bias, stride, padding, dilation = args.get_value()
     bias = args.assert_false_to_none(bias)
@@ -85,7 +85,7 @@ def method_nn_conv1d(toward, args, plan):
 
 
 @_ext.static('__nn_conv2d')
-def method_nn_conv2d(toward, args, plan):
+def method_nn_conv2d(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 6)
     x, weight, bias, stride, padding, dilation = args.get_value()
     bias = args.assert_false_to_none(bias)

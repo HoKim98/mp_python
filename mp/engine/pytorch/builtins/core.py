@@ -8,28 +8,28 @@ def _float_to_int(args):
 
 
 @_ext.static('tensor', fixed=True)
-def method_tensor(toward, args, plan):
+def method_tensor(plan, toward, args, kwargs):
     args = _float_to_int(args.get_value())
     value = _torch.zeros(*args, device=Device.get())
     return value
 
 
 @_ext.static('rand', fixed=True)
-def method_rand(toward, args, plan):
+def method_rand(plan, toward, args, kwargs):
     args = _float_to_int(args.get_value())
     value = _torch.rand(*args, device=Device.get())
     return value
 
 
 @_ext.static('randn', fixed=True)
-def method_randn(toward, args, plan):
+def method_randn(plan, toward, args, kwargs):
     args = _float_to_int(args.get_value())
     value = _torch.randn(*args, device=Device.get())
     return value
 
 
 @_ext.static('var', fixed=True)
-def method_var(toward, args, plan):
+def method_var(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 2)
     weight, optim = args.get_value()
     weight.requires_grad_(True)
@@ -38,7 +38,7 @@ def method_var(toward, args, plan):
 
 
 @_ext.static('copy')
-def method_copy(toward, args, plan):
+def method_copy(plan, toward, args, kwargs):
     symbol = '[copy]' if toward is None else toward.symbol
     args.assert_sizeof(symbol, 1)
     sub, = args.get_value()
@@ -46,7 +46,7 @@ def method_copy(toward, args, plan):
 
 
 @_ext.static('float')
-def method_float(toward, args, plan):
+def method_float(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 1)
     x, = args.get_value()
     x = x.float()
@@ -54,7 +54,7 @@ def method_float(toward, args, plan):
 
 
 @_ext.static('long')
-def method_long(toward, args, plan):
+def method_long(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 1)
     x, = args.get_value()
     x = x.long()

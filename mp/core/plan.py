@@ -192,8 +192,9 @@ class Plan:
         if toward.is_builtins:
             method, fixed = self.find_method(toward.name, find_hidden=False)
             args = attr.AttrTuple(toward_origin.args, self._execute_recursive)
+            kwargs = attr.AttrDict(toward_origin.kwargs, self._execute_recursive)
             repeat = self._execute_recursive(repeat)
-            return attr.AttrMethod(self, name, method, toward_origin, args, fixed, repeat)
+            return attr.AttrMethod(self, name, method, toward_origin, args, kwargs, fixed, repeat)
         # if user-defined methods
         if toward.is_method_defined:
             return self._execute_method_defined(toward, name, toward_origin.args, repeat)

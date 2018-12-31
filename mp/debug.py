@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from mp import PythonInterpreter
+from mp import PyTorchInterpreter
 
 
 if __name__ == '__main__':
@@ -7,5 +7,5 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--dir-process', help='Run the shell from that directory. (default: parent directory)',
                         default='..')
     args = parser.parse_args()
-    cmd = PythonInterpreter(dir_process=args.dir_process)
+    cmd = PyTorchInterpreter(dir_process=args.dir_process)
     cmd.begin_interactive(debug=True)

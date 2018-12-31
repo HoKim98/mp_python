@@ -5,7 +5,7 @@ _F = _torch.optim
 
 
 @_ext.static('__optim_adam', fixed=True)
-def method_optim_adam(toward, args, plan):
+def method_optim_adam(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 1)
     lr, = args.get_value()
     optim = _F.Adam({_torch.zeros(1)}, lr)
@@ -20,7 +20,7 @@ def has_trainer_inited(plan):
 
 
 @_ext.static('step')
-def method_optim_step(toward, args, plan):
+def method_optim_step(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 2)
     # init
     if not has_trainer_inited(plan):

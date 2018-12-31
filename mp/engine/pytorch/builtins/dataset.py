@@ -46,7 +46,7 @@ class DatasetBatch:
 
 
 @_ext.static('batch')
-def method_dataset_batch(toward, args, plan):
+def method_dataset_batch(plan, toward, args, kwargs):
     # Find registered method
     code = str(toward)
     method = plan.event(code)
@@ -64,7 +64,7 @@ def method_dataset_batch(toward, args, plan):
 
 
 @_ext.static('__dataset_shuffle')
-def method_dataset_shuffle(toward, args, plan):
+def method_dataset_shuffle(plan, toward, args, kwargs):
     args.assert_sizeof(toward.symbol, 2)
     x, dim = args.get_value()
     dim = int(dim)
